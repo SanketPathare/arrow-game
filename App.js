@@ -6,7 +6,7 @@ import {
   BackHandler,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HomeScreen } from './src/screens/HomeScreen.js';
 import { GameScreen } from './src/screens/GameScreen.js';
 import { LevelSelectScreen } from './src/screens/LevelSelectScreen.js';
@@ -129,18 +129,16 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <View style={{ flex: 1, backgroundColor: '#060814' }}>
+      <View style={styles.rootContainer}>
         <StatusBar
           barStyle="light-content"
           backgroundColor="transparent"
           translucent={true}
         />
-        <SafeAreaView style={styles.safeArea}>
 
         {!isReady ? (
           <LoadingScreen
             onLoaded={() => setSplashFinished(true)}
-            theme={theme}
           />
         ) : (
           <>
@@ -191,15 +189,15 @@ export default function App() {
             )}
           </>
         )}
-        </SafeAreaView>
       </View>
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  rootContainer: {
     flex: 1,
+    backgroundColor: '#060814',
   },
   loadingContainer: {
     flex: 1,

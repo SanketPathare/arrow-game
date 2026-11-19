@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
+import { ThreeDModalPlaque } from '../components/ThreeDModalPlaque.js';
 import { soundManager } from '../utils/sound.js';
 
 export function SettingsScreen({
@@ -158,44 +159,39 @@ export function SettingsScreen({
           </View>
         </ScrollView>
 
-        {/* Confirmation Modal */}
-        <Modal
+        {/* 3D Confirmation Modal Plaque */}
+        <ThreeDModalPlaque
           visible={showResetConfirm}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowResetConfirm(false)}
+          onClose={() => setShowResetConfirm(false)}
+          crestType="warning"
+          title="RESET CAMPAIGN?"
+          subtitle="Irreversible action warning"
+          maxWidth={360}
         >
-          <View style={styles.modalBackdrop}>
-            <View style={styles.confirmCard}>
-              <View style={styles.warningIconWrapper}>
-                <Ionicons name="warning" size={32} color="#FFFFFF" />
-              </View>
-
-              <Text style={styles.confirmTitle}>CONFIRM DATA RESET?</Text>
-              <Text style={styles.confirmDesc}>
-                This will irreversibly reset all 50 unlocked levels, stars, and records back to Level 1.
-              </Text>
-
-              <View style={styles.modalActionRow}>
-                <ThreeDButton
-                  title="Cancel"
-                  colorScheme="blue"
-                  size="md"
-                  onPress={() => setShowResetConfirm(false)}
-                  style={{ flex: 1, marginRight: 8 }}
-                />
-
-                <ThreeDButton
-                  title="Yes, Reset"
-                  colorScheme="danger"
-                  size="md"
-                  onPress={confirmReset}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            </View>
+          <View style={styles.confirmBox}>
+            <Text style={styles.confirmDesc}>
+              This will irreversibly reset all 50 unlocked levels, stars, and campaign progress back to Level 1.
+            </Text>
           </View>
-        </Modal>
+
+          <View style={styles.modalActionRow}>
+            <ThreeDButton
+              title="Cancel"
+              colorScheme="blue"
+              size="md"
+              onPress={() => setShowResetConfirm(false)}
+              style={{ flex: 1, marginRight: 8 }}
+            />
+
+            <ThreeDButton
+              title="Yes, Reset"
+              colorScheme="danger"
+              size="md"
+              onPress={confirmReset}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </ThreeDModalPlaque>
       </View>
     </GameBackground>
   );
@@ -204,7 +200,10 @@ export function SettingsScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 8,
+    paddingTop: 4,
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -299,55 +298,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94A3B8',
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(3, 5, 14, 0.85)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  confirmCard: {
-    width: '100%',
-    maxWidth: 340,
-    borderRadius: 26,
-    borderWidth: 2.5,
-    borderColor: '#FF2A6D',
-    backgroundColor: '#1E2C44',
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#FF2A6D',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  warningIconWrapper: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#D81136',
-    justifyContent: 'center',
-    alignItems: 'center',
+  confirmBox: {
+    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     marginBottom: 16,
-    shadowColor: '#D81136',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-  },
-  confirmTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1,
-    marginBottom: 8,
-    textAlign: 'center',
+    alignItems: 'center',
   },
   confirmDesc: {
-    fontSize: 13,
-    color: '#B0C8E8',
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#D4B59D',
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 22,
   },
   modalActionRow: {
     flexDirection: 'row',

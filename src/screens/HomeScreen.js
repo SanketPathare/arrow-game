@@ -12,7 +12,8 @@ import { ThreeDButton } from '../components/ThreeDButton.js';
 import { TactilePill } from '../components/TactilePill.js';
 import { ThreeDEmblem } from '../components/ThreeDEmblem.js';
 import { WoodenCampaignBoard } from '../components/WoodenCampaignBoard.js';
-import { soundManager } from '../utils/sound.js';
+import { ThreeDModalPlaque } from '../components/ThreeDModalPlaque.js';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export function HomeScreen({
   unlockedLevel = 1,
@@ -39,10 +40,11 @@ export function HomeScreen({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        {/* Top Section Matching Reference Image 1 */}
+        {/* Top Action Row (Matching Reference Image 1) */}
         <View style={styles.topBar}>
-          {/* Help Button (Circular Blue 3D) */}
+          {/* Circular Blue 3D Help Button */}
           <ThreeDButton
             icon="help"
             iconSize={26}
@@ -51,10 +53,10 @@ export function HomeScreen({
             onPress={() => setShowHowToPlay(true)}
           />
 
-          {/* Central Tactical Puzzle Pill */}
+          {/* Central 3D Tactical Puzzle Pill */}
           <TactilePill type="tactical" />
 
-          {/* Settings Button (Circular Orange 3D) */}
+          {/* Circular Orange 3D Settings Button with Clean Crisp Cog */}
           <ThreeDButton
             icon="settings"
             iconSize={24}
@@ -64,10 +66,10 @@ export function HomeScreen({
           />
         </View>
 
-        {/* Central 3D Emblem & Title (Matching Reference Image 1) */}
-        <ThreeDEmblem size={120} showTitle={true} />
+        {/* Central 3D Shield Emblem & Title */}
+        <ThreeDEmblem size={96} showTitle={true} />
 
-        {/* Wooden Campaign Progress Board (Matching Reference Image 1) */}
+        {/* 3D Wooden Campaign Progress Board */}
         <WoodenCampaignBoard
           completedLevels={completedLevels}
           totalLevels={50}
@@ -76,13 +78,13 @@ export function HomeScreen({
           unlockedLevel={unlockedLevel}
         />
 
-        {/* 3 Main 3D Buttons (Matching Reference Image 1) */}
+        {/* 3 Main 3D Buttons Stack */}
         <View style={styles.buttonStack}>
           {/* Button 1: Continue Level */}
           <ThreeDButton
             title={`Continue Level ${unlockedLevel}`}
             icon="play"
-            iconSize={22}
+            iconSize={20}
             colorScheme="cyan"
             size="lg"
             onPress={() => onPlay(unlockedLevel)}
@@ -93,7 +95,7 @@ export function HomeScreen({
           <ThreeDButton
             title="Level Vault (50 Stages)"
             icon="grid"
-            iconSize={22}
+            iconSize={20}
             colorScheme="blue"
             size="lg"
             onPress={onOpenLevelSelect}
@@ -101,196 +103,185 @@ export function HomeScreen({
           />
 
           {/* Button 3: Daily Protocol */}
-          <ThreeDButton
-            title={isDailyCompletedToday ? 'Daily Protocol (Done ✓)' : 'Daily Protocol'}
-            icon="calendar"
-            iconSize={22}
-            colorScheme="yellow"
-            size="lg"
-            badge={isDailyCompletedToday ? null : 'NEW'}
-            onPress={onOpenDaily}
-            style={styles.btnSpacing}
-          />
-        </View>
+          <View style={styles.dailyButtonWrapper}>
+            <ThreeDButton
+              title={isDailyCompletedToday ? 'Daily Protocol (Done ✓)' : 'Daily Protocol'}
+              icon="calendar"
+              iconSize={20}
+              colorScheme="yellow"
+              size="lg"
+              badge={isDailyCompletedToday ? null : 'NEW'}
+              onPress={onOpenDaily}
+              style={{ width: '100%' }}
+            />
 
-        {/* Star Glint Sparkle Decor */}
-        <View style={styles.sparkleDecor} pointerEvents="none">
-          <Ionicons name="sparkles" size={26} color="rgba(255, 255, 255, 0.85)" />
+            {/* Star Glint Sparkle at Bottom Right of Daily Protocol (Matching Reference Image 1) */}
+            <View style={styles.sparkleDecor} pointerEvents="none">
+              <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+            </View>
+          </View>
         </View>
       </ScrollView>
 
-      {/* 3D How to Play Modal */}
-      <Modal
+      {/* 3D How to Play Modal Plaque */}
+      <ThreeDModalPlaque
         visible={showHowToPlay}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowHowToPlay(false)}
+        onClose={() => setShowHowToPlay(false)}
+        crestType="rules"
+        title="HOW TO PLAY"
+        subtitle="Master the tactical clearance"
+        maxWidth={360}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.rulesCard}>
-            <View style={styles.rulesTitleBar}>
-              <Ionicons name="navigate-circle" size={28} color="#00F2FE" style={{ marginRight: 8 }} />
-              <Text style={styles.rulesTitle}>RULES OF ESCAPE</Text>
+        <View style={styles.rulesTray}>
+          <View style={styles.ruleItem}>
+            <LinearGradient
+              colors={['#38D9F8', '#0FB7E8', '#0288D1']}
+              style={styles.ruleIconBox}
+            >
+              <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <View style={styles.ruleTextBox}>
+              <Text style={styles.ruleHeader}>Direction Vector</Text>
+              <Text style={styles.ruleDesc}>
+                Arrows escape in the direction they point.
+              </Text>
             </View>
+          </View>
 
-            <View style={styles.ruleItem}>
-              <View style={styles.ruleIconBoxCyan}>
-                <Ionicons name="arrow-up" size={22} color="#FFFFFF" />
-              </View>
-              <View style={styles.ruleTextBox}>
-                <Text style={styles.ruleHeader}>Direction Vector</Text>
-                <Text style={styles.ruleDesc}>
-                  Arrows can only exit straight out of the board in their pointing direction.
-                </Text>
-              </View>
+          <View style={styles.trayDivider} />
+
+          <View style={styles.ruleItem}>
+            <LinearGradient
+              colors={['#FF5E7E', '#E62E5C', '#BF123F']}
+              style={styles.ruleIconBox}
+            >
+              <Ionicons name="hand-left" size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <View style={styles.ruleTextBox}>
+              <Text style={styles.ruleHeader}>Avoid Blockers</Text>
+              <Text style={styles.ruleDesc}>
+                Blocked paths cannot move. Free blocking arrows first!
+              </Text>
             </View>
+          </View>
 
-            <View style={styles.ruleItem}>
-              <View style={styles.ruleIconBoxRed}>
-                <Ionicons name="hand-left" size={22} color="#FFFFFF" />
-              </View>
-              <View style={styles.ruleTextBox}>
-                <Text style={styles.ruleHeader}>Avoid Blockers</Text>
-                <Text style={styles.ruleDesc}>
-                  If any arrow blocks its path, it cannot move. Free the blocking arrows first!
-                </Text>
-              </View>
+          <View style={styles.trayDivider} />
+
+          <View style={styles.ruleItem}>
+            <LinearGradient
+              colors={['#FFD13B', '#FFA800', '#F57C00']}
+              style={styles.ruleIconBox}
+            >
+              <Ionicons name="star" size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <View style={styles.ruleTextBox}>
+              <Text style={styles.ruleHeader}>Clear the Board</Text>
+              <Text style={styles.ruleDesc}>
+                Evacuate all arrows to achieve 3 stars and unlock the next level!
+              </Text>
             </View>
-
-            <View style={styles.ruleItem}>
-              <View style={styles.ruleIconBoxYellow}>
-                <Ionicons name="star" size={22} color="#FFFFFF" />
-              </View>
-              <View style={styles.ruleTextBox}>
-                <Text style={styles.ruleHeader}>Clear the Board</Text>
-                <Text style={styles.ruleDesc}>
-                  Remove all arrows with strategic precision to achieve a perfect 3-star score!
-                </Text>
-              </View>
-            </View>
-
-            <ThreeDButton
-              title="Understood!"
-              colorScheme="cyan"
-              size="md"
-              onPress={() => setShowHowToPlay(false)}
-              style={{ width: '100%', marginTop: 8 }}
-            />
           </View>
         </View>
-      </Modal>
+
+        <ThreeDButton
+          title="GOT IT, LET'S PLAY!"
+          colorScheme="cyan"
+          size="md"
+          onPress={() => setShowHowToPlay(false)}
+          style={{ width: '100%', marginTop: 4 }}
+        />
+      </ThreeDModalPlaque>
     </GameBackground>
   );
 }
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 24,
     alignItems: 'center',
-    position: 'relative',
+    width: '100%',
+    maxWidth: 440,
+    alignSelf: 'center',
   },
   topBar: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   buttonStack: {
     width: '100%',
-    marginTop: 4,
+    marginTop: 2,
   },
   btnSpacing: {
-    marginBottom: 8,
+    marginBottom: 6,
+  },
+  dailyButtonWrapper: {
+    position: 'relative',
+    width: '100%',
   },
   sparkleDecor: {
     position: 'absolute',
-    bottom: 25,
-    right: 15,
+    bottom: -6,
+    right: 4,
+    zIndex: 20,
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(3, 5, 14, 0.82)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  rulesCard: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 26,
-    borderWidth: 2.5,
-    borderColor: '#6BA5E0',
-    backgroundColor: '#1E2C44',
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#00F2FE',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
-    shadowRadius: 20,
-    elevation: 12,
-  },
-  rulesTitleBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 18,
-  },
-  rulesTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 1.2,
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+  rulesTray: {
+    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
   },
   ruleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    paddingVertical: 6,
     width: '100%',
   },
-  ruleIconBoxCyan: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#0288D1',
+  ruleIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    elevation: 3,
   },
-  ruleIconBoxRed: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#D81136',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  ruleIconBoxYellow: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#FFA800',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+  trayDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    marginVertical: 4,
   },
   ruleTextBox: {
     flex: 1,
   },
   ruleHeader: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 2,
+    color: '#FFF2C6',
+    marginBottom: 1,
   },
   ruleDesc: {
-    fontSize: 12,
-    color: '#B0C8E8',
-    lineHeight: 16,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#D4B59D',
+    lineHeight: 15,
   },
 });

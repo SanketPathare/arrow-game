@@ -30,7 +30,7 @@ export function ThreeDButton({
   const handlePressIn = () => {
     if (disabled) return;
     Animated.spring(pressAnim, {
-      toValue: 4, // depress by 4px into 3D bevel
+      toValue: 3.5, // depress by 3.5px into 3D bevel
       useNativeDriver: true,
       speed: 40,
       bounciness: 0,
@@ -54,10 +54,10 @@ export function ThreeDButton({
   };
 
   const isCircle = size === 'circle';
-  const height = isCircle ? 52 : size === 'lg' ? 62 : size === 'sm' ? 44 : 52;
-  const width = isCircle ? 52 : undefined;
-  const borderRadius = isCircle ? 26 : Math.round(height * 0.42);
-  const bevelDepth = isCircle ? 5 : 6;
+  const height = isCircle ? 48 : size === 'lg' ? 56 : size === 'sm' ? 42 : 48;
+  const width = isCircle ? 48 : undefined;
+  const borderRadius = isCircle ? 24 : Math.round(height * 0.42);
+  const bevelDepth = isCircle ? 4 : 5;
 
   // Color schemes matching the 3D reference images
   let faceGradient = ['#38D9F8', '#0FB7E8', '#0288D1'];
@@ -93,6 +93,12 @@ export function ThreeDButton({
     bevelColor = '#7A0A27';
     shadowColor = '#4A0517';
     textShadowColor = '#7A0A27';
+  }
+
+  // Ensure clean solid icon glyphs
+  let effectiveIcon = icon;
+  if (icon === 'settings') {
+    effectiveIcon = 'settings-sharp';
   }
 
   return (
@@ -139,22 +145,33 @@ export function ThreeDButton({
             end={{ x: 0, y: 1 }}
             style={[StyleSheet.absoluteFill, { borderRadius }]}
           >
-            {/* Top Glossy Specular Reflection Sheen */}
-            <View style={[styles.specularSheen, { borderRadius }]} />
+            {/* Top Glossy Specular Reflection Sheen with Smooth Gradient Fade */}
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.45)', 'rgba(255, 255, 255, 0.02)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              pointerEvents="none"
+              style={[
+                styles.specularSheen,
+                isCircle
+                  ? { top: 2, left: 6, right: 6, height: '40%', borderRadius: 16 }
+                  : { top: 2, left: 8, right: 8, height: '44%', borderRadius: 16 },
+              ]}
+            />
             {/* Bottom Inner Shadow Contour */}
-            <View style={[styles.bottomInnerContour, { borderRadius }]} />
+            <View style={[styles.bottomInnerContour, { borderRadius }]} pointerEvents="none" />
           </LinearGradient>
 
           {/* Button Content */}
           <View style={styles.contentRow}>
-            {icon ? (
+            {effectiveIcon ? (
               <Ionicons
-                name={icon}
-                size={iconSize}
+                name={effectiveIcon}
+                size={isCircle ? 24 : iconSize}
                 color="#FFFFFF"
                 style={[
                   styles.iconShadow,
-                  title ? { marginRight: 10 } : {},
+                  title ? { marginRight: 8 } : {},
                 ]}
               />
             ) : null}
@@ -166,7 +183,7 @@ export function ThreeDButton({
                   {
                     color: textColor,
                     textShadowColor,
-                    fontSize: size === 'lg' ? 20 : size === 'sm' ? 15 : 17,
+                    fontSize: size === 'lg' ? 18 : size === 'sm' ? 14 : 16,
                   },
                 ]}
               >
@@ -198,7 +215,7 @@ export function ThreeDButton({
 const styles = StyleSheet.create({
   outerWrapper: {
     position: 'relative',
-    marginVertical: 4,
+    marginVertical: 3,
   },
   disabled: {
     opacity: 0.5,
@@ -207,10 +224,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.45,
+    shadowRadius: 5,
+    elevation: 6,
   },
   buttonFace: {
     justifyContent: 'center',
@@ -218,23 +235,17 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     overflow: 'hidden',
     position: 'relative',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   specularSheen: {
     position: 'absolute',
-    top: 2,
-    left: 6,
-    right: 6,
-    height: '42%',
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 20,
   },
   bottomInnerContour: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '25%',
+    height: '24%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
   },
   contentRow: {
@@ -246,18 +257,18 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: '900',
     letterSpacing: 0.5,
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 2,
   },
   iconShadow: {
     textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 2,
   },
   badgeWrapper: {
     position: 'absolute',
-    top: -6,
-    right: 6,
+    top: -5,
+    right: 8,
     zIndex: 10,
     shadowColor: '#D81136',
     shadowOffset: { width: 0, height: 2 },
@@ -266,9 +277,9 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   badgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
     alignItems: 'center',
@@ -280,13 +291,13 @@ const styles = StyleSheet.create({
     top: 1,
     left: 2,
     right: 2,
-    height: '40%',
+    height: '38%',
     backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    borderRadius: 6,
+    borderRadius: 5,
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
     letterSpacing: 0.5,
   },

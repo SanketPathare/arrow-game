@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThreeDText } from './ThreeDText.js';
 
-export function ThreeDEmblem({ size = 110, showTitle = true }) {
+export function ThreeDEmblem({ size = 96, showTitle = true }) {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const arrowSpread = useRef(new Animated.Value(0)).current;
@@ -14,7 +14,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
     const floatLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(floatAnim, {
-          toValue: -6,
+          toValue: -5,
           duration: 1800,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
@@ -32,12 +32,12 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.1,
+          toValue: 1.12,
           duration: 1400,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 0.95,
+          toValue: 0.96,
           duration: 1400,
           useNativeDriver: true,
         }),
@@ -48,7 +48,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
     const spreadLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(arrowSpread, {
-          toValue: 3,
+          toValue: 2.5,
           duration: 1200,
           useNativeDriver: true,
         }),
@@ -71,9 +71,9 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
     };
   }, [floatAnim, pulseAnim, arrowSpread]);
 
-  const cornerOffset = Math.round(size * 0.16);
+  const cornerOffset = Math.round(size * 0.15);
   const arrowIconSize = Math.round(size * 0.28);
-  const centerOrbSize = Math.round(size * 0.2);
+  const centerOrbSize = Math.round(size * 0.22);
 
   return (
     <Animated.View
@@ -88,14 +88,14 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
       <View style={[styles.emblemShadow, { width: size, height: size, borderRadius: size * 0.32 }]}>
         {/* Outer Bronze/Wooden Bevel Rim */}
         <LinearGradient
-          colors={['#5A4E46', '#2D2520', '#1A1512']}
+          colors={['#6A5C52', '#3D332B', '#241D17']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={[styles.outerRim, { width: size, height: size, borderRadius: size * 0.32 }]}
         >
-          {/* Inner Dark Glossy Obsidian Core */}
+          {/* Inner Glossy Obsidian Core */}
           <LinearGradient
-            colors={['#2A3548', '#161E2E', '#0D131F']}
+            colors={['#2A364E', '#182236', '#0E1524']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={[styles.innerCore, { borderRadius: size * 0.28 }]}
@@ -134,7 +134,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#38D9F8" style={styles.arrowGlow} />
+              <Ionicons name="arrow-up" size={arrowIconSize} color="#00F2FE" style={styles.arrowGlow} />
             </Animated.View>
 
             {/* Top-Right Arrow (Up-Right) */}
@@ -152,7 +152,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#38D9F8" style={styles.arrowGlow} />
+              <Ionicons name="arrow-up" size={arrowIconSize} color="#00F2FE" style={styles.arrowGlow} />
             </Animated.View>
 
             {/* Bottom-Left Arrow (Down-Left) */}
@@ -170,7 +170,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#818CF8" style={styles.arrowGlowPurple} />
+              <Ionicons name="arrow-up" size={arrowIconSize} color="#9D72FF" style={styles.arrowGlowPurple} />
             </Animated.View>
 
             {/* Bottom-Right Arrow (Down-Right) */}
@@ -188,19 +188,19 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#818CF8" style={styles.arrowGlowPurple} />
+              <Ionicons name="arrow-up" size={arrowIconSize} color="#9D72FF" style={styles.arrowGlowPurple} />
             </Animated.View>
           </LinearGradient>
         </LinearGradient>
       </View>
 
-      {/* Main 3D Title: ARROW ESCAPE (Matching Reference Image 1) */}
+      {/* Main 3D Title: ARROW ESCAPE */}
       {showTitle && (
         <View style={styles.titleSection}>
           <View style={styles.titleRow}>
             <ThreeDText
               text="ARROW"
-              size={34}
+              size={30}
               color="#FFFFFF"
               depthColor="#0288D1"
               depth={4}
@@ -209,7 +209,7 @@ export function ThreeDEmblem({ size = 110, showTitle = true }) {
             />
             <ThreeDText
               text="ESCAPE"
-              size={34}
+              size={30}
               color="#00F2FE"
               depthColor="#01579B"
               depth={4}
@@ -228,21 +228,21 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 6,
+    marginVertical: 4,
   },
   emblemShadow: {
     shadowColor: '#00F2FE',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 10,
   },
   outerRim: {
-    padding: 4,
+    padding: 3.5,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   innerCore: {
     width: '100%',
@@ -259,59 +259,59 @@ const styles = StyleSheet.create({
     top: 2,
     left: 4,
     right: 4,
-    height: '40%',
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    height: '42%',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   centerOrb: {
     backgroundColor: '#FFFFFF',
     shadowColor: '#00F2FE',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 6,
     zIndex: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   orbHighlight: {
-    width: '40%',
-    height: '40%',
+    width: '45%',
+    height: '45%',
     borderRadius: 99,
     backgroundColor: '#FFFFFF',
     position: 'absolute',
-    top: '15%',
-    left: '20%',
+    top: '12%',
+    left: '18%',
   },
   arrowAbsolute: {
     position: 'absolute',
     zIndex: 3,
   },
   arrowGlow: {
-    textShadowColor: 'rgba(0, 242, 254, 0.8)',
+    textShadowColor: 'rgba(0, 242, 254, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
   },
   arrowGlowPurple: {
-    textShadowColor: 'rgba(129, 140, 248, 0.8)',
+    textShadowColor: 'rgba(157, 114, 255, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    textShadowRadius: 6,
   },
   titleSection: {
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 6,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   subtitleText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     color: '#E0F2FE',
-    letterSpacing: 1.5,
-    marginTop: 4,
+    letterSpacing: 1.2,
+    marginTop: 2,
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    textShadowOffset: { width: 0, height: 1.5 },
+    textShadowRadius: 3,
   },
 });

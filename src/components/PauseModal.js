@@ -3,12 +3,17 @@ import {
   StyleSheet,
   View,
   Text,
-  Modal,
-  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GameButton } from './GameButton.js';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ThreeDModalPlaque } from './ThreeDModalPlaque.js';
+import { ThreeDButton } from './ThreeDButton.js';
+import { ThreeDToggle } from './ThreeDToggle.js';
 
+/**
+ * 3D Cartoon Pause Popup Plaque matching Reference Images 1 & 2.
+ * Features 3D Pause crest, carved wooden tray toggles, and glossy 3D buttons.
+ */
 export function PauseModal({
   visible,
   onResume,
@@ -19,202 +24,188 @@ export function PauseModal({
   hapticsEnabled,
   onToggleSound,
   onToggleHaptics,
-  theme,
 }) {
   return (
-    <Modal
+    <ThreeDModalPlaque
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onResume}
+      onClose={onResume}
+      crestType="pause"
+      title="GAME PAUSED"
+      subtitle="Strategic operation suspended"
+      maxWidth={360}
+      showClose={false}
     >
-      <View style={styles.backdrop}>
-        <View
-          style={[
-            styles.modalCard,
-            {
-              backgroundColor: theme.surface,
-              borderColor: theme.borderLight || theme.border,
-            },
-          ]}
-        >
-          {/* Pause Icon Glow Badge */}
-          <View style={styles.pauseBadge}>
-            <Ionicons name="pause" size={26} color="#00F2FE" />
-          </View>
+      {/* Recessed Settings Inlay Tray */}
+      <View style={styles.settingsTray}>
+        {/* Toggle 1: Sound Effects */}
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleLeft}>
+            {/* 3D Cyan Icon Badge */}
+            <LinearGradient
+              colors={['#38D9F8', '#0FB7E8', '#0288D1']}
+              style={styles.iconBadge}
+            >
+              <Ionicons name="volume-high" size={18} color="#FFFFFF" />
+            </LinearGradient>
 
-          <Text style={[styles.title, { color: theme.text }]}>PAUSE PROTOCOL</Text>
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-            Current operations suspended
-          </Text>
-
-          {/* Quick settings toggles */}
-          <View
-            style={[
-              styles.settingsBox,
-              {
-                backgroundColor: theme.surfaceLight,
-                borderColor: theme.border,
-              },
-            ]}
-          >
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleLabelGroup}>
-                <Ionicons name="volume-high" size={18} color={theme.accent} style={{ marginRight: 10 }} />
-                <Text style={[styles.toggleLabel, { color: theme.text }]}>Audio Effects</Text>
-              </View>
-              <Switch
-                value={soundEnabled}
-                onValueChange={onToggleSound}
-                trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
-
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleLabelGroup}>
-                <Ionicons name="hardware-chip" size={18} color="#FFB703" style={{ marginRight: 10 }} />
-                <Text style={[styles.toggleLabel, { color: theme.text }]}>Haptic Tactile</Text>
-              </View>
-              <Switch
-                value={hapticsEnabled}
-                onValueChange={onToggleHaptics}
-                trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor="#FFFFFF"
-              />
+            <View style={styles.labelCol}>
+              <Text style={styles.rowTitle}>Sound Effects</Text>
+              <Text style={styles.rowSubtitle}>Audio taps & victory chimes</Text>
             </View>
           </View>
 
-          {/* Actions */}
-          <View style={styles.actionButtons}>
-            <GameButton
-              title="Resume Game"
-              icon="play"
-              variant="primary"
-              size="lg"
-              onPress={onResume}
-              theme={theme}
-              style={styles.btnSpacing}
-            />
+          <ThreeDToggle
+            value={soundEnabled}
+            onValueChange={onToggleSound}
+            colorScheme="cyan"
+          />
+        </View>
 
-            <GameButton
-              title="Restart Level"
-              icon="refresh"
-              variant="secondary"
-              size="md"
-              onPress={onRestart}
-              theme={theme}
-              style={styles.btnSpacing}
-            />
+        {/* Inlay Divider */}
+        <View style={styles.trayDivider} />
 
-            <View style={styles.rowButtons}>
-              <GameButton
-                title="Level Vault"
-                icon="grid"
-                variant="secondary"
-                size="md"
-                onPress={onLevelSelect}
-                theme={theme}
-                style={{ flex: 1, marginRight: 8 }}
-              />
+        {/* Toggle 2: Haptic Tactile */}
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleLeft}>
+            {/* 3D Yellow/Orange Icon Badge */}
+            <LinearGradient
+              colors={['#FFD13B', '#FFA800', '#F57C00']}
+              style={styles.iconBadge}
+            >
+              <Ionicons name="hardware-chip" size={18} color="#FFFFFF" />
+            </LinearGradient>
 
-              <GameButton
-                title="Home Base"
-                icon="home"
-                variant="secondary"
-                size="md"
-                onPress={onHome}
-                theme={theme}
-                style={{ flex: 1 }}
-              />
+            <View style={styles.labelCol}>
+              <Text style={styles.rowTitle}>Haptic Tactile</Text>
+              <Text style={styles.rowSubtitle}>Physical bump feedback</Text>
             </View>
           </View>
+
+          <ThreeDToggle
+            value={hapticsEnabled}
+            onValueChange={onToggleHaptics}
+            colorScheme="yellow"
+          />
         </View>
       </View>
-    </Modal>
+
+      {/* 3D Action Buttons Stack */}
+      <View style={styles.actionStack}>
+        {/* Hero Button: Resume Game */}
+        <ThreeDButton
+          title="RESUME GAME"
+          icon="play"
+          iconSize={22}
+          colorScheme="cyan"
+          size="lg"
+          onPress={onResume}
+          style={styles.btnSpacing}
+        />
+
+        {/* Secondary: Restart Level */}
+        <ThreeDButton
+          title="RESTART LEVEL"
+          icon="refresh"
+          iconSize={20}
+          colorScheme="yellow"
+          size="md"
+          onPress={onRestart}
+          style={styles.btnSpacing}
+        />
+
+        {/* Bottom Row: Level Vault & Home Base */}
+        <View style={styles.bottomRow}>
+          <ThreeDButton
+            title="Levels"
+            icon="grid"
+            iconSize={18}
+            colorScheme="blue"
+            size="md"
+            onPress={onLevelSelect}
+            style={{ flex: 1, marginRight: 8 }}
+          />
+
+          <ThreeDButton
+            title="Home"
+            icon="home"
+            iconSize={18}
+            colorScheme="blue"
+            size="md"
+            onPress={onHome}
+            style={{ flex: 1 }}
+          />
+        </View>
+      </View>
+    </ThreeDModalPlaque>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(3, 5, 12, 0.82)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  modalCard: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: 28,
+  settingsTray: {
+    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+    borderRadius: 16,
     borderWidth: 1.5,
-    padding: 24,
-    alignItems: 'center',
-    shadowColor: '#00F2FE',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  pauseBadge: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: 'rgba(0, 242, 254, 0.12)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(0, 242, 254, 0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     marginBottom: 14,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: 20,
-    fontWeight: '500',
-  },
-  settingsBox: {
-    width: '100%',
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    marginBottom: 22,
   },
   toggleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    justifyContent: 'space-between',
+    paddingVertical: 6,
   },
-  toggleLabelGroup: {
+  toggleLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
   },
-  toggleLabel: {
+  iconBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  labelCol: {
+    flex: 1,
+  },
+  rowTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    color: '#FFF2C6',
+    letterSpacing: 0.3,
   },
-  divider: {
+  rowSubtitle: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    color: '#C4A58D',
+    marginTop: 1,
+  },
+  trayDivider: {
     height: 1,
-    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    marginVertical: 4,
   },
-  actionButtons: {
+  actionStack: {
     width: '100%',
   },
   btnSpacing: {
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  rowButtons: {
+  bottomRow: {
     flexDirection: 'row',
-    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });
