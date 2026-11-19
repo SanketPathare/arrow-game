@@ -5,7 +5,6 @@ import {
   Text,
   Animated,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ThreeDModalPlaque } from './ThreeDModalPlaque.js';
 import { ThreeDButton } from './ThreeDButton.js';
 import { ThreeDStar } from './ThreeDIcons.js';
@@ -13,8 +12,7 @@ import { Confetti } from './Confetti.js';
 import { formatTime } from '../engine/puzzleEngine.js';
 
 /**
- * 3D Cartoon Level Complete Popup Plaque matching Reference Images 1 & 2.
- * Features 3D Golden Trophy, bouncy 3D stars, carved stats plinths, and celebration buttons.
+ * Level-complete celebration with sequential star animations and a compact result recap.
  */
 export function LevelCompleteModal({
   visible,
@@ -67,11 +65,11 @@ export function LevelCompleteModal({
   }, [visible, stars, star1Anim, star2Anim, star3Anim]);
 
   const ratingTitle =
-    stars === 3 ? 'FLAWLESS EXTRACTION!' : stars === 2 ? 'TACTICAL ESCAPE!' : 'SECTOR CLEARED!';
+    stars === 3 ? 'PERFECT RUN!' : stars === 2 ? 'WELL PLAYED!' : 'LEVEL COMPLETE';
 
   const ratingSubtitle = isDaily
-    ? 'Daily Protocol Decrypted'
-    : `Sector Level ${levelNumber} Secured`;
+    ? 'Today’s challenge is complete'
+    : `You cleared level ${levelNumber}`;
 
   return (
     <>
@@ -159,7 +157,7 @@ export function LevelCompleteModal({
 
           {/* Secondary: Replay Stage */}
           <ThreeDButton
-            title="REPLAY STAGE"
+            title="PLAY AGAIN"
             icon="refresh"
             iconSize={20}
             colorScheme="yellow"
@@ -207,10 +205,10 @@ const styles = StyleSheet.create({
   statsTray: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+    backgroundColor: 'rgba(2, 6, 23, 0.58)',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.16)',
     paddingVertical: 10,
     paddingHorizontal: 8,
     marginBottom: 14,
@@ -222,7 +220,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#D4B59D',
+    color: '#94A3B8',
     letterSpacing: 0.8,
   },
   statValue: {
@@ -236,12 +234,12 @@ const styles = StyleSheet.create({
   statSub: {
     fontSize: 9.5,
     fontWeight: '600',
-    color: '#A08068',
+    color: '#64748B',
   },
   statDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(148, 163, 184, 0.16)',
   },
   actionStack: {
     width: '100%',

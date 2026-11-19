@@ -1,15 +1,16 @@
 import React from 'react';
 import { StyleSheet, View, ImageBackground, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EnvironmentalParticles } from './EnvironmentalParticles.js';
 
-export function GameBackground({ type = 'home', children }) {
+export function GameBackground({ type = 'home', children, theme }) {
   const insets = useSafeAreaInsets();
 
-  const bgSource =
-    type === 'home'
-      ? require('../../assets/home_bg.jpg')
-      : require('../../assets/game_bg.jpg');
+  const isDark = !theme || theme.name === 'dark';
+  const bgSource = isDark
+    ? require('../../assets/home_bg.jpg')
+    : require('../../assets/game_bg.jpg');
 
   // Ensure comfortable top clearance on all devices (notches, punch-holes, dynamic island)
   const topInset = Math.max(insets.top, Platform.OS === 'android' ? 24 : 12);
@@ -22,9 +23,17 @@ export function GameBackground({ type = 'home', children }) {
       resizeMode="cover"
     >
       {/* Floating magical firefly particles */}
+      <LinearGradient
+        colors={isDark
+          ? ['rgba(4, 8, 22, 0.56)', 'rgba(8, 15, 34, 0.68)', 'rgba(4, 8, 22, 0.88)']
+          : ['rgba(248, 250, 252, 0.38)', 'rgba(239, 246, 255, 0.52)', 'rgba(248, 250, 252, 0.78)']}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       <EnvironmentalParticles
-        count={type === 'home' ? 18 : 12}
-        color={type === 'home' ? '#FFE8A3' : '#FFD13B'}
+        count={type === 'home' ? 8 : 4}
+        color={isDark ? '#7DD3FC' : '#F59E0B'}
       />
 
       {/* Edge-to-Edge Safe Inset Responsive Container */}
@@ -50,18 +59,14 @@ export function GameBackground({ type = 'home', children }) {
 const styles = StyleSheet.create({
   fullScreenBackground: {
     flex: 1,
-    width: '100%',
-    height: '100%',
   },
   safeContentContainer: {
     flex: 1,
-    width: '100%',
-    height: '100%',
   },
   responsiveMaxConstraint: {
     flex: 1,
     width: '100%',
-    maxWidth: 500, // Perfect scaling for tablets and large foldables
+    maxWidth: 680,
     alignSelf: 'center',
   },
 });

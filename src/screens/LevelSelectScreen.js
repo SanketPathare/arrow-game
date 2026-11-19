@@ -6,14 +6,15 @@ import {
   FlatList,
   ScrollView,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { LevelCard } from '../components/LevelCard.js';
 import { getAllLevelsSummary } from '../engine/levelData.js';
 import { DIFFICULTY_TIERS } from '../utils/constants.js';
 import { soundManager } from '../utils/sound.js';
+import { SvgStar } from '../components/SvgIcons.js';
 
 export function LevelSelectScreen({
   unlockedLevel = 1,
@@ -23,6 +24,8 @@ export function LevelSelectScreen({
   theme,
 }) {
   const [selectedTier, setSelectedTier] = useState('all');
+  const { width } = useWindowDimensions();
+  const numColumns = width >= 800 ? 6 : width >= 540 ? 5 : width < 340 ? 3 : 4;
 
   const allLevels = useMemo(() => getAllLevelsSummary(), []);
 
@@ -40,7 +43,7 @@ export function LevelSelectScreen({
   const totalStars = Object.values(levelStats).reduce((acc, curr) => acc + (curr?.stars || 0), 0);
 
   return (
-    <GameBackground type="home">
+    <GameBackground type="home" theme={theme}>
       <View style={styles.container}>
         {/* Top Header */}
         <View style={styles.header}>
@@ -53,17 +56,19 @@ export function LevelSelectScreen({
           />
 
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>LEVEL VAULT</Text>
+            <Text style={styles.title}>CHOOSE A LEVEL</Text>
             <View style={styles.starBadge}>
-              <Ionicons name="star" size={14} color="#FFD13B" style={{ marginRight: 4 }} />
+              <View style={{ marginRight: 4 }}>
+                <SvgStar size={14} color="#FFD13B" />
+              </View>
               <Text style={styles.starBadgeText}>
-                {totalStars} / 150 <Text style={{ color: '#D4B896' }}>Stars</Text>
+                {totalStars} / 150 <Text style={{ color: '#D4B896' }}>stars</Text>
               </Text>
             </View>
           </View>
 
           {/* Symmetry placeholder */}
-          <View style={{ width: 52 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Difficulty Sector Tabs */}
@@ -124,9 +129,11 @@ export function LevelSelectScreen({
 
         {/* Level Cards Grid */}
         <FlatList
+          key={numColumns}
           data={filteredLevels}
           keyExtractor={(item) => item.levelNumber.toString()}
-          numColumns={4}
+          numColumns={numColumns}
+          style={styles.gridList}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
@@ -156,7 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 4,
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 680,
     alignSelf: 'center',
   },
   header: {
@@ -165,6 +172,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 6,
+  },
+  headerSpacer: {
+    width: 48,
+    height: 48,
   },
   titleContainer: {
     alignItems: 'center',
@@ -235,6 +246,10 @@ const styles = StyleSheet.create({
   tierMiniBadgeText: {
     fontSize: 9,
     fontWeight: '800',
+  },
+  gridList: {
+    flex: 1,
+    width: '100%',
   },
   gridContent: {
     paddingHorizontal: 12,

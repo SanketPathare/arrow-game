@@ -5,6 +5,7 @@ class SoundManager {
   constructor() {
     this.soundEnabled = true;
     this.hapticsEnabled = true;
+    this.audioContext = null;
   }
 
   updateSettings({ soundEnabled, hapticsEnabled }) {
@@ -12,62 +13,56 @@ class SoundManager {
     if (typeof hapticsEnabled === 'boolean') this.hapticsEnabled = hapticsEnabled;
   }
 
-  // --- Haptics Feedback ---
-  hapticTap() {
+  runHaptic(action) {
     if (!this.hapticsEnabled) return;
     try {
-      Haptics.selectionAsync();
-    } catch (e) {
-      // Gracefully ignore if platform doesn't support
+      action().catch(() => {});
+    } catch {
+      // Some platforms may not expose haptics.
     }
+  }
+
+  // --- Haptics Feedback ---
+  hapticTap() {
+    this.runHaptic(() => Haptics.selectionAsync());
   }
 
   hapticEscape() {
-    if (!this.hapticsEnabled) return;
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) {
-      // Gracefully ignore
-    }
+    this.runHaptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
   }
 
   hapticBlocked() {
-    if (!this.hapticsEnabled) return;
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    } catch (e) {
-      // Gracefully ignore
-    }
+    this.runHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
   }
 
   hapticVictory() {
-    if (!this.hapticsEnabled) return;
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
-      // Gracefully ignore
-    }
+    this.runHaptic(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
   }
 
   // --- Audio Feedback (Web Audio synthesizer fallback on web, haptics on native) ---
   playWebTone(freq, type = 'sine', duration = 0.1) {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       try {
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = type;
-          osc.frequency.setValueAtTime(freq, ctx.currentTime);
-          gain.gain.setValueAtTime(0.15, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start();
-          osc.stop(ctx.currentTime + duration);
-        }
-      } catch (e) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!this.audioContext) this.audioContext = new AudioContext();
+
+        const ctx = this.audioContext;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.onended = () => {
+          osc.disconnect();
+          gain.disconnect();
+        };
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch {
         // Safe fail
       }
     }

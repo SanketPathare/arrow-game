@@ -4,9 +4,9 @@ import {
   View,
   Text,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { GameButton } from './GameButton.js';
 import { formatTime } from '../engine/puzzleEngine.js';
+import { SvgFlash, SvgTimer, SvgTarget } from './SvgIcons.js';
 
 export function GameHeader({
   levelNumber,
@@ -71,7 +71,7 @@ export function GameHeader({
         {/* Moves */}
         <View style={styles.statItem}>
           <View style={[styles.statIconBox, { backgroundColor: 'rgba(0, 242, 254, 0.12)' }]}>
-            <Ionicons name="flash-outline" size={15} color={theme.accent} />
+            <SvgFlash size={15} color={theme.accent} />
           </View>
           <View style={styles.statInfo}>
             <Text style={[styles.statValue, { color: theme.text }]}>{moves}</Text>
@@ -84,7 +84,7 @@ export function GameHeader({
         {/* Timer */}
         <View style={styles.statItem}>
           <View style={[styles.statIconBox, { backgroundColor: 'rgba(255, 183, 3, 0.12)' }]}>
-            <Ionicons name="time-outline" size={15} color="#FFB703" />
+            <SvgTimer size={15} color="#FFB703" />
           </View>
           <View style={styles.statInfo}>
             <Text style={[styles.statValue, { color: theme.text }]}>{formatTime(timer)}</Text>
@@ -97,7 +97,7 @@ export function GameHeader({
         {/* Remaining Arrows */}
         <View style={styles.statItem}>
           <View style={[styles.statIconBox, { backgroundColor: 'rgba(6, 214, 160, 0.12)' }]}>
-            <Ionicons name="radio-outline" size={15} color={theme.success} />
+            <SvgTarget size={15} color={theme.success} />
           </View>
           <View style={styles.statInfo}>
             <Text style={[styles.statValue, { color: theme.text }]}>

@@ -37,12 +37,12 @@ export const DIRECTION_CONFIG = {
 };
 
 export const DIFFICULTY_TIERS = [
-  { id: 'all', title: 'All Stages', range: [1, 50], size: '4-8', badge: '50 Levels' },
-  { id: 'beginner', title: 'Sector 1', range: [1, 10], size: 4, label: '4x4', badge: 'Beginner' },
-  { id: 'easy', title: 'Sector 2', range: [11, 20], size: 5, label: '5x5', badge: 'Easy' },
-  { id: 'medium', title: 'Sector 3', range: [21, 30], size: 6, label: '6x6', badge: 'Medium' },
-  { id: 'hard', title: 'Sector 4', range: [31, 40], size: 7, label: '7x7', badge: 'Hard' },
-  { id: 'expert', title: 'Sector 5', range: [41, 50], size: 8, label: '8x8', badge: 'Expert' },
+  { id: 'all', title: 'All levels', range: [1, 50], size: '4-8', badge: '50 levels' },
+  { id: 'beginner', title: 'Beginner', range: [1, 10], size: 4, label: '4x4' },
+  { id: 'easy', title: 'Easy', range: [11, 20], size: 5, label: '5x5' },
+  { id: 'medium', title: 'Medium', range: [21, 30], size: 6, label: '6x6' },
+  { id: 'hard', title: 'Hard', range: [31, 40], size: 7, label: '7x7' },
+  { id: 'expert', title: 'Expert', range: [41, 50], size: 8, label: '8x8' },
 ];
 
 export const STORAGE_KEYS = {
@@ -50,6 +50,7 @@ export const STORAGE_KEYS = {
   LEVEL_STATS: '@arrow_escape_level_stats',
   SETTINGS: '@arrow_escape_settings',
   DAILY_STATS: '@arrow_escape_daily_stats',
+  DAILY_GIFT: '@arrow_escape_daily_gift',
 };
 
 export const THEMES = {

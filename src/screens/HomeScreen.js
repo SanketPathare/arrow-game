@@ -1,19 +1,114 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   ScrollView,
-  Modal,
+  Pressable,
+  useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
-import { TactilePill } from '../components/TactilePill.js';
 import { ThreeDEmblem } from '../components/ThreeDEmblem.js';
-import { WoodenCampaignBoard } from '../components/WoodenCampaignBoard.js';
+import { CampaignProgressCard } from '../components/CampaignProgressCard.js';
 import { ThreeDModalPlaque } from '../components/ThreeDModalPlaque.js';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Confetti } from '../components/Confetti.js';
+import {
+  SvgArrowGraphic,
+  SvgHand,
+  SvgStar,
+  SvgTrophy,
+  SvgGift,
+  SvgFlame,
+  SvgGrid,
+  SvgCrown,
+  SvgFlash,
+  SvgCheck,
+} from '../components/SvgIcons.js';
+import { getLevelData } from '../engine/levelData.js';
+import { StorageService } from '../utils/storage.js';
+import { soundManager } from '../utils/sound.js';
+
+const CHAPTERS = [
+  { minLevel: 1, maxLevel: 10, name: 'Whispering Woods', number: 1, color: '#38BDF8' },
+  { minLevel: 11, maxLevel: 20, name: 'Sunken Ruins', number: 2, color: '#34D399' },
+  { minLevel: 21, maxLevel: 30, name: 'Mystic Labyrinth', number: 3, color: '#FBBF24' },
+  { minLevel: 31, maxLevel: 40, name: 'Sky Citadel', number: 4, color: '#FB923C' },
+  { minLevel: 41, maxLevel: 50, name: 'Obsidian Spire', number: 5, color: '#F43F5E' },
+];
+
+function getPlayerRank(stars) {
+  if (stars >= 120) return { title: 'Grandmaster', badge: 'Tier VI', color: '#FFD700' };
+  if (stars >= 80) return { title: 'Master Navigator', badge: 'Tier V', color: '#F59E0B' };
+  if (stars >= 50) return { title: 'Tactical Ranger', badge: 'Tier IV', color: '#00F2FE' };
+  if (stars >= 25) return { title: 'Wayfarer', badge: 'Tier III', color: '#38BDF8' };
+  if (stars >= 10) return { title: 'Pathfinder', badge: 'Tier II', color: '#A78BFA' };
+  return { title: 'Novice Archer', badge: 'Tier I', color: '#94A3B8' };
+}
+
+const ACHIEVEMENTS_DEF = [
+  {
+    id: 'first_clear',
+    title: 'First Flight',
+    desc: 'Clear your first tactical puzzle',
+    target: 1,
+    icon: 'play',
+    color: '#00F2FE',
+    reward: 'Rank I Title',
+    calcProgress: (stats) => Math.min(1, stats.completedLevels),
+  },
+  {
+    id: 'star_collector',
+    title: 'Star Collector',
+    desc: 'Earn 15 stars across campaign levels',
+    target: 15,
+    icon: 'star',
+    color: '#FFD13B',
+    reward: '+2 Hints',
+    calcProgress: (stats) => Math.min(15, stats.totalStars),
+  },
+  {
+    id: 'flawless_five',
+    title: 'Flawless Mind',
+    desc: 'Earn 3 stars on 5 different levels',
+    target: 5,
+    icon: 'flash',
+    color: '#38BDF8',
+    reward: 'Gold Badge',
+    calcProgress: (stats) => Math.min(5, stats.threeStarCount),
+  },
+  {
+    id: 'daily_streak',
+    title: 'Daily Voyager',
+    desc: 'Maintain a 3-day daily quest streak',
+    target: 3,
+    icon: 'flame',
+    color: '#FF6B00',
+    reward: 'Streak Flame',
+    calcProgress: (stats) => Math.min(3, stats.streak),
+  },
+  {
+    id: 'sector_pro',
+    title: 'Labyrinth Veteran',
+    desc: 'Reach Level 20 in the campaign',
+    target: 20,
+    icon: 'grid',
+    color: '#A855F7',
+    reward: 'Master Badge',
+    calcProgress: (stats) => Math.min(20, stats.unlockedLevel),
+  },
+  {
+    id: 'grandmaster',
+    title: 'Apex Grandmaster',
+    desc: 'Conquer all 50 campaign levels',
+    target: 50,
+    icon: 'crown',
+    color: '#EAB308',
+    reward: 'Obsidian Crown',
+    calcProgress: (stats) => Math.min(50, stats.completedLevels),
+  },
+];
 
 export function HomeScreen({
   unlockedLevel = 1,
@@ -26,110 +121,375 @@ export function HomeScreen({
   theme,
 }) {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftClaimedDate, setGiftClaimedDate] = useState(null);
 
-  // Compute stats
-  const completedLevels = Object.keys(levelStats).filter((k) => levelStats[k]?.completed).length;
-  const totalStars = Object.values(levelStats).reduce((acc, curr) => acc + (curr?.stars || 0), 0);
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 360;
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const isDailyCompletedToday = dailyStats?.lastPlayedDate === todayStr;
+  const isGiftClaimedToday = giftClaimedDate === todayStr;
+
+  // Check daily gift claim on mount
+  useEffect(() => {
+    async function checkGift() {
+      const claimedDate = await StorageService.getDailyGiftClaimedDate();
+      setGiftClaimedDate(claimedDate);
+    }
+    checkGift();
+  }, [todayStr]);
+
+  // Compute game statistics
+  const completedLevels = useMemo(
+    () => Object.keys(levelStats).filter((k) => levelStats[k]?.completed).length,
+    [levelStats]
+  );
+  const totalStars = useMemo(
+    () => Object.values(levelStats).reduce((acc, curr) => acc + (curr?.stars || 0), 0),
+    [levelStats]
+  );
+  const threeStarCount = useMemo(
+    () => Object.values(levelStats).filter((s) => (s?.stars || 0) === 3).length,
+    [levelStats]
+  );
   const streak = dailyStats?.streak || 0;
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const isDailyCompletedToday = dailyStats?.lastPlayedDate === todayStr;
+  const rank = useMemo(() => getPlayerRank(totalStars), [totalStars]);
+
+  const currentChapter = useMemo(() => {
+    return (
+      CHAPTERS.find((c) => unlockedLevel >= c.minLevel && unlockedLevel <= c.maxLevel) ||
+      CHAPTERS[0]
+    );
+  }, [unlockedLevel]);
+
+  const currentLevelData = useMemo(() => {
+    return getLevelData(unlockedLevel) || { boardSize: 4, arrowCount: 6, difficulty: 'BEGINNER' };
+  }, [unlockedLevel]);
+
+  const currentLevelStats = levelStats[unlockedLevel] || {};
+
+  // Claim Daily Supply Gift
+  const handleClaimDailyGift = useCallback(async () => {
+    if (isGiftClaimedToday) return;
+    soundManager.playVictorySound();
+    await StorageService.claimDailyGift(todayStr);
+    setGiftClaimedDate(todayStr);
+    setShowGiftModal(true);
+  }, [isGiftClaimedToday, todayStr]);
+
+  // Achievements calculation
+  const achievementStats = useMemo(
+    () => ({
+      completedLevels,
+      totalStars,
+      threeStarCount,
+      streak,
+      unlockedLevel,
+    }),
+    [completedLevels, totalStars, threeStarCount, streak, unlockedLevel]
+  );
+
+  const completedAchievementsCount = useMemo(() => {
+    return ACHIEVEMENTS_DEF.filter(
+      (a) => a.calcProgress(achievementStats) >= a.target
+    ).length;
+  }, [achievementStats]);
 
   return (
-    <GameBackground type="home">
+    <GameBackground type="home" theme={theme}>
       <ScrollView
+        style={styles.scrollWrapper}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* Top Action Row (Matching Reference Image 1) */}
+        {/* Top Action & Player Rank Header */}
         <View style={styles.topBar}>
-          {/* Circular Blue 3D Help Button */}
+          {/* Help Button */}
           <ThreeDButton
             icon="help"
-            iconSize={26}
+            iconSize={24}
             colorScheme="circle-blue"
             size="circle"
             onPress={() => setShowHowToPlay(true)}
           />
 
-          {/* Central 3D Tactical Puzzle Pill */}
-          <TactilePill type="tactical" />
+          {/* Player Rank & Star Badge Pill */}
+          <Pressable
+            onPress={() => setShowAchievements(true)}
+            style={styles.rankPillWrapper}
+            accessibilityRole="button"
+            accessibilityLabel={`Player Rank: ${rank.title}, ${totalStars} stars`}
+          >
+            <View style={styles.rankPillShadow} />
+            <LinearGradient
+              colors={['#1F2E4A', '#131F35', '#0B1424']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.rankPillFace}
+            >
+              <View style={styles.rankSheen} />
+              <View style={styles.rankCrownSlot}>
+                <SvgCrown size={17} color={rank.color} />
+              </View>
+              <View style={styles.rankTextCol}>
+                <Text numberOfLines={1} style={styles.rankTitle}>
+                  {rank.title.toUpperCase()}
+                </Text>
+                <View style={styles.starRow}>
+                  <SvgStar size={11} color="#FFD13B" />
+                  <Text style={styles.rankStarsText}>{totalStars} ★</Text>
+                </View>
+              </View>
+            </LinearGradient>
+          </Pressable>
 
-          {/* Circular Orange 3D Settings Button with Clean Crisp Cog */}
-          <ThreeDButton
-            icon="settings"
-            iconSize={24}
-            colorScheme="circle-orange"
-            size="circle"
-            onPress={onOpenSettings}
-          />
+          {/* Right Action Cluster: Trophies & Settings */}
+          <View style={styles.rightCluster}>
+            <ThreeDButton
+              icon="trophy"
+              iconSize={22}
+              colorScheme="yellow"
+              size="circle"
+              onPress={() => setShowAchievements(true)}
+              badge={completedAchievementsCount > 0 ? `${completedAchievementsCount}` : null}
+            />
+            <View style={{ width: 8 }} />
+            <ThreeDButton
+              icon="settings"
+              iconSize={22}
+              colorScheme="circle-orange"
+              size="circle"
+              onPress={onOpenSettings}
+            />
+          </View>
         </View>
 
-        {/* Central 3D Shield Emblem & Title */}
-        <ThreeDEmblem size={96} showTitle={true} />
+        {/* Central 3D Shield Emblem & Game Title */}
+        <View style={styles.emblemSection}>
+          <ThreeDEmblem size={isNarrow ? 80 : 94} showTitle={true} />
 
-        {/* 3D Wooden Campaign Progress Board */}
-        <WoodenCampaignBoard
+          {/* Chapter Zone Tag */}
+          <View style={styles.chapterBadge}>
+            <LinearGradient
+              colors={['rgba(56, 189, 248, 0.2)', 'rgba(14, 165, 233, 0.08)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.chapterGradient}
+            >
+              <Text style={styles.chapterText}>
+                CHAPTER {currentChapter.number} • {currentChapter.name.toUpperCase()}
+              </Text>
+            </LinearGradient>
+          </View>
+        </View>
+
+        {/* Hero Card: Current Campaign Mission */}
+        <View style={styles.heroMissionCard}>
+          <View style={styles.heroCardShadow} />
+          <LinearGradient
+            colors={['#1E2E4B', '#121D32', '#0A1222']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.heroCardFace}
+          >
+            <View style={styles.heroTopSheen} />
+
+            {/* Mission Info Header */}
+            <View style={styles.heroHeaderRow}>
+              <View style={styles.heroTitleGroup}>
+                <Text style={styles.missionSubLabel}>ACTIVE CAMPAIGN</Text>
+                <Text style={styles.missionLevelTitle}>LEVEL {unlockedLevel}</Text>
+              </View>
+
+              <View style={styles.specsPill}>
+                <Text style={styles.specsText}>
+                  {currentLevelData.boardSize}x{currentLevelData.boardSize} • {currentLevelData.difficulty}
+                </Text>
+              </View>
+            </View>
+
+            {/* Level Stars Preview */}
+            <View style={styles.starsPreviewRow}>
+              {[1, 2, 3].map((starIdx) => (
+                <View key={starIdx} style={styles.heroStarSlot}>
+                  <SvgStar
+                    size={16}
+                    empty={(currentLevelStats?.stars || 0) < starIdx}
+                    color="#FFD13B"
+                  />
+                </View>
+              ))}
+              <Text style={styles.bestRecordText}>
+                {currentLevelStats?.completed
+                  ? `Best: ${currentLevelStats.moves} moves`
+                  : 'Ready to play'}
+              </Text>
+            </View>
+
+            {/* Large Launch Button */}
+            <ThreeDButton
+              title={currentLevelStats?.completed ? `REPLAY LEVEL ${unlockedLevel}` : `LAUNCH LEVEL ${unlockedLevel}`}
+              icon="play"
+              iconSize={22}
+              colorScheme="cyan"
+              size="lg"
+              onPress={() => onPlay(unlockedLevel)}
+            />
+          </LinearGradient>
+        </View>
+
+        {/* 2-Column Game Modes Row */}
+        <View style={styles.modesRow}>
+          {/* Daily Quest Mode Card */}
+          <Pressable
+            onPress={onOpenDaily}
+            style={styles.modeCard}
+            accessibilityRole="button"
+            accessibilityLabel="Play Daily Challenge"
+          >
+            <View style={styles.modeCardShadow} />
+            <LinearGradient
+              colors={['#302210', '#1F1406', '#140D04']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={[styles.modeCardFace, { borderColor: 'rgba(251, 191, 36, 0.4)' }]}
+            >
+              <View style={styles.modeTopSheen} />
+              <View style={styles.modeHeader}>
+                <View style={[styles.modeIconCircle, { backgroundColor: 'rgba(245, 158, 11, 0.18)' }]}>
+                  <SvgFlame size={20} color="#F59E0B" />
+                </View>
+                {isDailyCompletedToday && (
+                  <View style={styles.doneTag}>
+                    <SvgCheck size={11} color="#06D6A0" />
+                  </View>
+                )}
+              </View>
+
+              <Text style={styles.modeTitle}>DAILY QUEST</Text>
+              <Text style={styles.modeSubtitle}>
+                {isDailyCompletedToday ? 'Completed today' : 'Today’s challenge'}
+              </Text>
+
+              <View style={styles.modeFooter}>
+                <Text style={styles.modeHighlightOrange}>{streak}d streak 🔥</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
+
+          {/* Level Vault Mode Card */}
+          <Pressable
+            onPress={onOpenLevelSelect}
+            style={styles.modeCard}
+            accessibilityRole="button"
+            accessibilityLabel="Open Level Vault"
+          >
+            <View style={styles.modeCardShadow} />
+            <LinearGradient
+              colors={['#172640', '#0F1A2D', '#08101E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={[styles.modeCardFace, { borderColor: 'rgba(56, 189, 248, 0.4)' }]}
+            >
+              <View style={styles.modeTopSheen} />
+              <View style={styles.modeHeader}>
+                <View style={[styles.modeIconCircle, { backgroundColor: 'rgba(56, 189, 248, 0.18)' }]}>
+                  <SvgGrid size={19} color="#38BDF8" />
+                </View>
+                <View style={styles.vaultProgressPill}>
+                  <Text style={styles.vaultProgressText}>{completedLevels}/50</Text>
+                </View>
+              </View>
+
+              <Text style={styles.modeTitle}>LEVEL VAULT</Text>
+              <Text style={styles.modeSubtitle}>50 Handcrafted maps</Text>
+
+              <View style={styles.modeFooter}>
+                <Text style={styles.modeHighlightBlue}>Explore stages →</Text>
+              </View>
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        {/* Daily Tactical Supply Crate (Daily Mystery Reward) */}
+        <View style={styles.dailyGiftContainer}>
+          <View style={styles.giftCardShadow} />
+          <LinearGradient
+            colors={isGiftClaimedToday
+              ? ['#141D2D', '#0E1624']
+              : ['#282216', '#1A150C', '#100C05']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[
+              styles.giftCardFace,
+              {
+                borderColor: isGiftClaimedToday
+                  ? 'rgba(148, 163, 184, 0.22)'
+                  : 'rgba(251, 191, 36, 0.5)',
+              },
+            ]}
+          >
+            <View style={styles.giftSheen} />
+            <View style={styles.giftContentRow}>
+              <View
+                style={[
+                  styles.giftIconBox,
+                  {
+                    backgroundColor: isGiftClaimedToday
+                      ? 'rgba(255, 255, 255, 0.06)'
+                      : 'rgba(255, 209, 59, 0.2)',
+                  },
+                ]}
+              >
+                <SvgGift size={24} color={isGiftClaimedToday ? '#94A3B8' : '#FFD13B'} />
+              </View>
+
+              <View style={styles.giftTextGroup}>
+                <Text style={styles.giftTitle}>DAILY SUPPLY CRATE</Text>
+                <Text style={styles.giftSubtitle}>
+                  {isGiftClaimedToday
+                    ? 'Claimed for today • Supply arrives tomorrow'
+                    : 'Tap to unlock your tactical bonus!'}
+                </Text>
+              </View>
+
+              <ThreeDButton
+                title={isGiftClaimedToday ? 'Claimed' : 'Open'}
+                icon={isGiftClaimedToday ? 'checkmark' : 'gift'}
+                iconSize={15}
+                colorScheme={isGiftClaimedToday ? 'blue' : 'yellow'}
+                size="sm"
+                disabled={isGiftClaimedToday}
+                onPress={handleClaimDailyGift}
+                style={{ minWidth: 90 }}
+              />
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* 3D Campaign Progress Card */}
+        <CampaignProgressCard
           completedLevels={completedLevels}
           totalLevels={50}
           stars={totalStars}
           streak={streak}
           unlockedLevel={unlockedLevel}
         />
-
-        {/* 3 Main 3D Buttons Stack */}
-        <View style={styles.buttonStack}>
-          {/* Button 1: Continue Level */}
-          <ThreeDButton
-            title={`Continue Level ${unlockedLevel}`}
-            icon="play"
-            iconSize={20}
-            colorScheme="cyan"
-            size="lg"
-            onPress={() => onPlay(unlockedLevel)}
-            style={styles.btnSpacing}
-          />
-
-          {/* Button 2: Level Vault */}
-          <ThreeDButton
-            title="Level Vault (50 Stages)"
-            icon="grid"
-            iconSize={20}
-            colorScheme="blue"
-            size="lg"
-            onPress={onOpenLevelSelect}
-            style={styles.btnSpacing}
-          />
-
-          {/* Button 3: Daily Protocol */}
-          <View style={styles.dailyButtonWrapper}>
-            <ThreeDButton
-              title={isDailyCompletedToday ? 'Daily Protocol (Done ✓)' : 'Daily Protocol'}
-              icon="calendar"
-              iconSize={20}
-              colorScheme="yellow"
-              size="lg"
-              badge={isDailyCompletedToday ? null : 'NEW'}
-              onPress={onOpenDaily}
-              style={{ width: '100%' }}
-            />
-
-            {/* Star Glint Sparkle at Bottom Right of Daily Protocol (Matching Reference Image 1) */}
-            <View style={styles.sparkleDecor} pointerEvents="none">
-              <Ionicons name="sparkles" size={24} color="#FFFFFF" />
-            </View>
-          </View>
-        </View>
       </ScrollView>
 
-      {/* 3D How to Play Modal Plaque */}
+      {/* ---------------------------------------------------- */}
+      {/* Modal 1: How to Play Plaque                           */}
+      {/* ---------------------------------------------------- */}
       <ThreeDModalPlaque
         visible={showHowToPlay}
         onClose={() => setShowHowToPlay(false)}
         crestType="rules"
         title="HOW TO PLAY"
-        subtitle="Master the tactical clearance"
+        subtitle="Plan each move. Clear every arrow."
         maxWidth={360}
       >
         <View style={styles.rulesTray}>
@@ -138,10 +498,10 @@ export function HomeScreen({
               colors={['#38D9F8', '#0FB7E8', '#0288D1']}
               style={styles.ruleIconBox}
             >
-              <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
+              <SvgArrowGraphic size={20} dir="UP" state="normal" />
             </LinearGradient>
             <View style={styles.ruleTextBox}>
-              <Text style={styles.ruleHeader}>Direction Vector</Text>
+              <Text style={styles.ruleHeader}>Follow the arrow</Text>
               <Text style={styles.ruleDesc}>
                 Arrows escape in the direction they point.
               </Text>
@@ -155,10 +515,10 @@ export function HomeScreen({
               colors={['#FF5E7E', '#E62E5C', '#BF123F']}
               style={styles.ruleIconBox}
             >
-              <Ionicons name="hand-left" size={20} color="#FFFFFF" />
+              <SvgHand size={20} color="#FFFFFF" />
             </LinearGradient>
             <View style={styles.ruleTextBox}>
-              <Text style={styles.ruleHeader}>Avoid Blockers</Text>
+              <Text style={styles.ruleHeader}>Clear the path</Text>
               <Text style={styles.ruleDesc}>
                 Blocked paths cannot move. Free blocking arrows first!
               </Text>
@@ -172,23 +532,138 @@ export function HomeScreen({
               colors={['#FFD13B', '#FFA800', '#F57C00']}
               style={styles.ruleIconBox}
             >
-              <Ionicons name="star" size={20} color="#FFFFFF" />
+              <SvgStar size={20} color="#FFFFFF" />
             </LinearGradient>
             <View style={styles.ruleTextBox}>
-              <Text style={styles.ruleHeader}>Clear the Board</Text>
+              <Text style={styles.ruleHeader}>Earn your stars</Text>
               <Text style={styles.ruleDesc}>
-                Evacuate all arrows to achieve 3 stars and unlock the next level!
+                Clear the board in as few moves as possible to earn up to 3 stars.
               </Text>
             </View>
           </View>
         </View>
 
         <ThreeDButton
-          title="GOT IT, LET'S PLAY!"
+          title="Got it — let’s play"
           colorScheme="cyan"
           size="md"
           onPress={() => setShowHowToPlay(false)}
-          style={{ width: '100%', marginTop: 4 }}
+          style={styles.modalBtn}
+        />
+      </ThreeDModalPlaque>
+
+      {/* ---------------------------------------------------- */}
+      {/* Modal 2: Hall of Mastery / Achievements Plaque       */}
+      {/* ---------------------------------------------------- */}
+      <ThreeDModalPlaque
+        visible={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        crestType="trophy"
+        title="HALL OF MASTERY"
+        subtitle={`${completedAchievementsCount} of ${ACHIEVEMENTS_DEF.length} Badges Unlocked`}
+        maxWidth={380}
+      >
+        <View style={styles.achievementsTray}>
+          {ACHIEVEMENTS_DEF.map((ach) => {
+            const current = ach.calcProgress(achievementStats);
+            const isCompleted = current >= ach.target;
+            const progressPercent = Math.min(100, Math.round((current / ach.target) * 100));
+
+            return (
+              <View key={ach.id} style={styles.achievementRow}>
+                <LinearGradient
+                  colors={isCompleted ? ['#FBBF24', '#D97706'] : ['#26334D', '#172033']}
+                  style={styles.achIconBadge}
+                >
+                  {ach.icon === 'crown' ? (
+                    <SvgCrown size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  ) : ach.icon === 'flame' ? (
+                    <SvgFlame size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  ) : ach.icon === 'flash' ? (
+                    <SvgFlash size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  ) : ach.icon === 'star' ? (
+                    <SvgStar size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  ) : ach.icon === 'grid' ? (
+                    <SvgGrid size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  ) : (
+                    <SvgTrophy size={18} color={isCompleted ? '#FFFFFF' : '#64748B'} />
+                  )}
+                </LinearGradient>
+
+                <View style={styles.achInfoCol}>
+                  <View style={styles.achHeaderRow}>
+                    <Text style={styles.achTitle}>{ach.title}</Text>
+                    {isCompleted ? (
+                      <View style={styles.unlockedBadge}>
+                        <SvgCheck size={10} color="#FFFFFF" />
+                        <Text style={styles.unlockedText}>DONE</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.achRatio}>
+                        {current}/{ach.target}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.achDesc}>{ach.desc}</Text>
+
+                  {/* Mini Progress Bar */}
+                  <View style={styles.achProgressTrack}>
+                    <View
+                      style={[
+                        styles.achProgressFill,
+                        {
+                          width: `${progressPercent}%`,
+                          backgroundColor: isCompleted ? '#F59E0B' : '#00F2FE',
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        <ThreeDButton
+          title="Close Mastery"
+          colorScheme="blue"
+          size="md"
+          onPress={() => setShowAchievements(false)}
+          style={styles.modalBtn}
+        />
+      </ThreeDModalPlaque>
+
+      {/* ---------------------------------------------------- */}
+      {/* Modal 3: Daily Tactical Supply Claim Celebration      */}
+      {/* ---------------------------------------------------- */}
+      {showGiftModal && <Confetti count={40} />}
+      <ThreeDModalPlaque
+        visible={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        crestType="trophy"
+        title="SUPPLY SECURED!"
+        subtitle="Daily tactical supplies added to your vault"
+        maxWidth={360}
+      >
+        <View style={styles.giftRewardBox}>
+          <LinearGradient
+            colors={['rgba(245, 158, 11, 0.2)', 'rgba(217, 119, 6, 0.08)']}
+            style={styles.giftRewardPlaque}
+          >
+            <SvgGift size={48} color="#FFD13B" />
+            <Text style={styles.giftRewardTitle}>+1 Tactical Hint & Daily Star Boost</Text>
+            <Text style={styles.giftRewardSub}>
+              Use your free hint whenever an arrow blocks your path!
+            </Text>
+          </LinearGradient>
+        </View>
+
+        <ThreeDButton
+          title="Collect Reward"
+          colorScheme="yellow"
+          size="md"
+          onPress={() => setShowGiftModal(false)}
+          style={styles.modalBtn}
         />
       </ThreeDModalPlaque>
     </GameBackground>
@@ -196,13 +671,18 @@ export function HomeScreen({
 }
 
 const styles = StyleSheet.create({
+  scrollWrapper: {
+    flex: 1,
+    width: '100%',
+  },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 16,
     paddingTop: 4,
-    paddingBottom: 24,
+    paddingBottom: 28,
     alignItems: 'center',
     width: '100%',
-    maxWidth: 440,
+    maxWidth: 480,
     alignSelf: 'center',
   },
   topBar: {
@@ -210,38 +690,353 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
-  },
-  buttonStack: {
-    width: '100%',
-    marginTop: 2,
-  },
-  btnSpacing: {
     marginBottom: 6,
   },
-  dailyButtonWrapper: {
+  rightCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rankPillWrapper: {
     position: 'relative',
-    width: '100%',
+    marginHorizontal: 8,
+    flex: 1,
+    maxWidth: 190,
   },
-  sparkleDecor: {
+  rankPillShadow: {
     position: 'absolute',
-    bottom: -6,
-    right: 4,
-    zIndex: 20,
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 6,
-    elevation: 4,
+    top: 3,
+    left: 2,
+    right: 2,
+    bottom: -3,
+    borderRadius: 16,
+    backgroundColor: '#020617',
   },
-  rulesTray: {
-    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+  rankPillFace: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(56, 189, 248, 0.35)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  rankSheen: {
+    position: 'absolute',
+    top: 1,
+    left: 4,
+    right: 4,
+    height: '42%',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    borderRadius: 8,
+  },
+  rankCrownSlot: {
+    marginRight: 6,
+  },
+  rankTextCol: {
+    flex: 1,
+  },
+  rankTitle: {
+    fontSize: 10.5,
+    fontWeight: '900',
+    color: '#FFE8A3',
+    letterSpacing: 0.6,
+  },
+  starRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  rankStarsText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#F8FAFC',
+    marginLeft: 3,
+  },
+  emblemSection: {
+    alignItems: 'center',
+    marginVertical: 4,
+    width: '100%',
+  },
+  chapterBadge: {
+    marginTop: 6,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  chapterGradient: {
+    paddingHorizontal: 12,
+    paddingVertical: 3,
+  },
+  chapterText: {
+    color: '#38BDF8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+  },
+
+  // Hero Mission Card
+  heroMissionCard: {
+    width: '100%',
+    position: 'relative',
+    marginVertical: 8,
+  },
+  heroCardShadow: {
+    position: 'absolute',
+    top: 6,
+    left: 4,
+    right: 4,
+    bottom: -6,
+    borderRadius: 22,
+    backgroundColor: '#020617',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  heroCardFace: {
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(56, 189, 248, 0.35)',
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  heroTopSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '35%',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  heroHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  heroTitleGroup: {
+    flex: 1,
+  },
+  missionSubLabel: {
+    fontSize: 9.5,
+    fontWeight: '900',
+    color: '#00F2FE',
+    letterSpacing: 1,
+    marginBottom: 1,
+  },
+  missionLevelTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#F8FAFC',
+    letterSpacing: 0.5,
+  },
+  specsPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  specsText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#A0BEDE',
+    letterSpacing: 0.5,
+  },
+  starsPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  heroStarSlot: {
+    marginRight: 4,
+  },
+  bestRecordText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+    marginLeft: 6,
+  },
+
+  // 2-Column Mode Tiles Row
+  modesRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  modeCard: {
+    flex: 1,
+    marginHorizontal: 4,
+    position: 'relative',
+  },
+  modeCardShadow: {
+    position: 'absolute',
+    top: 4,
+    left: 2,
+    right: 2,
+    bottom: -4,
+    borderRadius: 18,
+    backgroundColor: '#020617',
+    elevation: 4,
+  },
+  modeCardFace: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    minHeight: 112,
+    justifyContent: 'space-between',
+  },
+  modeTopSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  modeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modeIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneTag: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(6, 214, 160, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#06D6A0',
+  },
+  vaultProgressPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  vaultProgressText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+  modeTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#F8FAFC',
+    letterSpacing: 0.8,
+  },
+  modeSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  modeFooter: {
+    marginTop: 6,
+  },
+  modeHighlightOrange: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#F59E0B',
+  },
+  modeHighlightBlue: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+
+  // Daily Supply Crate Card
+  dailyGiftContainer: {
+    width: '100%',
+    position: 'relative',
+    marginVertical: 6,
+  },
+  giftCardShadow: {
+    position: 'absolute',
+    top: 4,
+    left: 2,
+    right: 2,
+    bottom: -4,
+    borderRadius: 18,
+    backgroundColor: '#020617',
+    elevation: 4,
+  },
+  giftCardFace: {
+    borderRadius: 18,
+    borderWidth: 1.5,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    marginBottom: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  giftSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  giftContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  giftIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  giftTextGroup: {
+    flex: 1,
+    marginRight: 8,
+  },
+  giftTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#FFE8A3',
+    letterSpacing: 0.6,
+  },
+  giftSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 1,
+  },
+
+  // Modals styling
+  modalBtn: {
+    marginTop: 8,
+  },
+  rulesTray: {
+    backgroundColor: 'rgba(2, 6, 23, 0.58)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
   },
   ruleItem: {
     flexDirection: 'row',
@@ -266,7 +1061,7 @@ const styles = StyleSheet.create({
   },
   trayDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    backgroundColor: 'rgba(148, 163, 184, 0.16)',
     marginVertical: 4,
   },
   ruleTextBox: {
@@ -275,13 +1070,121 @@ const styles = StyleSheet.create({
   ruleHeader: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFF2C6',
+    color: '#F8FAFC',
     marginBottom: 1,
   },
   ruleDesc: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#D4B59D',
+    color: '#94A3B8',
     lineHeight: 15,
+  },
+
+  // Achievements Modal Tray
+  achievementsTray: {
+    backgroundColor: 'rgba(2, 6, 23, 0.58)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.16)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  achievementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(148, 163, 184, 0.1)',
+  },
+  achIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  achInfoCol: {
+    flex: 1,
+  },
+  achHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  achTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#F8FAFC',
+  },
+  achDesc: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginBottom: 4,
+  },
+  achRatio: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#38BDF8',
+  },
+  unlockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 6,
+  },
+  unlockedText: {
+    color: '#FFFFFF',
+    fontSize: 8.5,
+    fontWeight: '900',
+    marginLeft: 3,
+  },
+  achProgressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    overflow: 'hidden',
+  },
+  achProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+
+  // Gift Reward Celebration Box
+  giftRewardBox: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    marginBottom: 6,
+  },
+  giftRewardPlaque: {
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+    padding: 16,
+    alignItems: 'center',
+  },
+  giftRewardTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#FFE8A3',
+    letterSpacing: 0.5,
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  giftRewardSub: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#D4B59D',
+    textAlign: 'center',
+    marginTop: 4,
+    lineHeight: 16,
   },
 });

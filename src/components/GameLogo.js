@@ -6,8 +6,8 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SvgArrowGraphic } from './SvgIcons.js';
 
 export function GameLogo({ size = 'md', showSubtitle = true, animated = true, theme }) {
   // Sizing variants
@@ -182,13 +182,13 @@ export function GameLogo({ size = 'md', showSubtitle = true, animated = true, th
               >
                 {/* Arrow UP */}
                 <Animated.View style={{ transform: [{ translateY: arrowUpY }] }}>
-                  <Ionicons name="arrow-up" size={iconSize} color="#38BDF8" />
+                  <SvgArrowGraphic size={iconSize} dir="UP" state="normal" />
                 </Animated.View>
 
                 {/* Arrow LEFT & RIGHT Row */}
                 <View style={styles.horizontalRow}>
                   <Animated.View style={{ transform: [{ translateX: arrowLeftX }] }}>
-                    <Ionicons name="arrow-back" size={iconSize} color="#0EA5E9" />
+                    <SvgArrowGraphic size={iconSize} dir="LEFT" state="normal" />
                   </Animated.View>
 
                   <View
@@ -203,13 +203,13 @@ export function GameLogo({ size = 'md', showSubtitle = true, animated = true, th
                   />
 
                   <Animated.View style={{ transform: [{ translateX: arrowRightX }] }}>
-                    <Ionicons name="arrow-forward" size={iconSize} color="#818CF8" />
+                    <SvgArrowGraphic size={iconSize} dir="RIGHT" state="normal" />
                   </Animated.View>
                 </View>
 
                 {/* Arrow DOWN */}
                 <Animated.View style={{ transform: [{ translateY: arrowDownY }] }}>
-                  <Ionicons name="arrow-down" size={iconSize} color="#6366F1" />
+                  <SvgArrowGraphic size={iconSize} dir="DOWN" state="normal" />
                 </Animated.View>
               </Animated.View>
             </View>

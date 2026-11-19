@@ -6,13 +6,12 @@ import {
   Animated,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { soundManager } from '../utils/sound.js';
+import { GameSvgIcon } from './SvgIcons.js';
 
 /**
- * 3D Cartoon Game Button with realistic bevel, glossy specular highlight,
- * extruded bottom depth, and spring press depression.
+ * Glassy gradient button with a restrained depth effect and spring feedback.
  */
 export function ThreeDButton({
   title,
@@ -54,45 +53,45 @@ export function ThreeDButton({
   };
 
   const isCircle = size === 'circle';
-  const height = isCircle ? 48 : size === 'lg' ? 56 : size === 'sm' ? 42 : 48;
-  const width = isCircle ? 48 : undefined;
-  const borderRadius = isCircle ? 24 : Math.round(height * 0.42);
-  const bevelDepth = isCircle ? 4 : 5;
+  const minHeight = isCircle ? 48 : size === 'lg' ? 52 : size === 'sm' ? 38 : 46;
+  const paddingVertical = isCircle ? 0 : size === 'lg' ? 12 : size === 'sm' ? 8 : 10;
+  const borderRadius = isCircle ? 24 : 18;
+  const bevelDepth = isCircle ? 3 : 4;
 
   // Color schemes matching the 3D reference images
   let faceGradient = ['#38D9F8', '#0FB7E8', '#0288D1'];
-  let bevelColor = '#01579B'; // dark blue extrusion
-  let shadowColor = '#013A63';
+  let bevelColor = '#0369A1';
+  let shadowColor = '#082F49';
   let textColor = '#FFFFFF';
   let textShadowColor = '#01579B';
 
   if (colorScheme === 'blue') {
     // Level Vault deep glossy blue
-    faceGradient = ['#4A7BD0', '#345EB5', '#24458F'];
-    bevelColor = '#172C5E';
-    shadowColor = '#0E1C3D';
+    faceGradient = ['#45638C', '#304968', '#24374F'];
+    bevelColor = '#17283D';
+    shadowColor = '#071523';
     textShadowColor = '#172C5E';
   } else if (colorScheme === 'yellow' || colorScheme === 'orange') {
-    // Daily Protocol / Hint glowing warm orange/yellow
-    faceGradient = ['#FFD13B', '#FFA800', '#F57C00'];
-    bevelColor = '#B25000';
-    shadowColor = '#662D00';
-    textShadowColor = '#B25000';
+    // Warm accent used for daily challenges and hints.
+    faceGradient = ['#FBBF24', '#F59E0B', '#D97706'];
+    bevelColor = '#92400E';
+    shadowColor = '#451A03';
+    textShadowColor = '#92400E';
   } else if (colorScheme === 'circle-blue') {
     // Help / Back / Pause circular blue button
-    faceGradient = ['#4FA8E8', '#2B87D1', '#186BB0'];
-    bevelColor = '#104C80';
-    shadowColor = '#0A3254';
+    faceGradient = ['#38BDF8', '#0284C7', '#0369A1'];
+    bevelColor = '#075985';
+    shadowColor = '#082F49';
   } else if (colorScheme === 'circle-orange') {
     // Settings circular orange button
-    faceGradient = ['#FFA347', '#F57216', '#D84E07'];
-    bevelColor = '#9A3300';
-    shadowColor = '#591D00';
+    faceGradient = ['#FB923C', '#F97316', '#C2410C'];
+    bevelColor = '#7C2D12';
+    shadowColor = '#431407';
   } else if (colorScheme === 'danger') {
-    faceGradient = ['#FF5E7E', '#E62E5C', '#BF123F'];
-    bevelColor = '#7A0A27';
-    shadowColor = '#4A0517';
-    textShadowColor = '#7A0A27';
+    faceGradient = ['#FB7185', '#E11D48', '#BE123C'];
+    bevelColor = '#881337';
+    shadowColor = '#4C0519';
+    textShadowColor = '#881337';
   }
 
   // Ensure clean solid icon glyphs
@@ -108,12 +107,12 @@ export function ThreeDButton({
         style={[
           styles.bevelBase,
           {
-            height,
-            width,
             borderRadius,
             backgroundColor: bevelColor,
             top: bevelDepth,
+            bottom: -bevelDepth,
             shadowColor,
+            ...(isCircle ? { width: 48, height: 48 } : { left: 0, right: 0 }),
           },
         ]}
       />
@@ -129,13 +128,17 @@ export function ThreeDButton({
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={title || icon}
+          accessibilityState={{ disabled }}
           style={[
             styles.buttonFace,
             {
-              height,
-              width,
               borderRadius,
               borderColor: 'rgba(255, 255, 255, 0.45)',
+              minHeight,
+              paddingVertical,
+              ...(isCircle ? { width: 48, height: 48 } : { alignSelf: 'stretch' }),
             },
           ]}
         >
@@ -165,25 +168,26 @@ export function ThreeDButton({
           {/* Button Content */}
           <View style={styles.contentRow}>
             {effectiveIcon ? (
-              <Ionicons
-                name={effectiveIcon}
-                size={isCircle ? 24 : iconSize}
-                color="#FFFFFF"
-                style={[
-                  styles.iconShadow,
-                  title ? { marginRight: 8 } : {},
-                ]}
-              />
+              <View style={[styles.svgIconWrapper, title ? { marginRight: 8 } : null]}>
+                <GameSvgIcon
+                  name={effectiveIcon}
+                  size={iconSize || (isCircle ? 24 : 20)}
+                  color="#FFFFFF"
+                />
+              </View>
             ) : null}
 
             {title ? (
               <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit={true}
+                minimumFontScale={0.75}
                 style={[
                   styles.buttonText,
                   {
                     color: textColor,
                     textShadowColor,
-                    fontSize: size === 'lg' ? 18 : size === 'sm' ? 14 : 16,
+                    fontSize: size === 'lg' ? 18 : size === 'sm' ? 13 : 15,
                   },
                 ]}
               >
@@ -235,7 +239,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     overflow: 'hidden',
     position: 'relative',
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
   },
   specularSheen: {
     position: 'absolute',
@@ -259,6 +263,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textShadowOffset: { width: 0, height: 1.5 },
     textShadowRadius: 2,
+  },
+  svgIconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconShadow: {
     textShadowColor: 'rgba(0, 0, 0, 0.4)',

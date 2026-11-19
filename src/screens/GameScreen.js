@@ -3,13 +3,13 @@ import {
   StyleSheet,
   View,
   BackHandler,
+  useWindowDimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { ThreeDText } from '../components/ThreeDText.js';
 import { TactilePill } from '../components/TactilePill.js';
-import { WoodenStatsHud } from '../components/WoodenStatsHud.js';
+import { GameStatsHud } from '../components/GameStatsHud.js';
 import { GameBoard } from '../components/GameBoard.js';
 import { PauseModal } from '../components/PauseModal.js';
 import { LevelCompleteModal } from '../components/LevelCompleteModal.js';
@@ -38,14 +38,16 @@ export function GameScreen({
     blockedArrowId,
     blockingArrowId,
     hintArrowId,
-    canUndo,
     handleArrowPress,
-    handleUndo,
     handleHint,
     handleRestart,
     togglePause,
     handleNextLevel,
   } = game;
+
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 360;
+  const titleSize = isNarrow ? (isDaily ? 16 : 22) : (isDaily ? 19 : 28);
 
   // Handle hardware Android back button
   useEffect(() => {
@@ -54,16 +56,13 @@ export function GameScreen({
         onNavigateLevelSelect();
         return true;
       }
-      if (!isPaused) {
-        togglePause();
-        return true;
-      }
-      return false;
+      togglePause();
+      return true;
     };
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
-  }, [isCompleted, isPaused, togglePause, onNavigateLevelSelect]);
+  }, [isCompleted, togglePause, onNavigateLevelSelect]);
 
   if (!levelData) {
     return <View style={styles.emptyContainer} />;
@@ -73,7 +72,7 @@ export function GameScreen({
   const totalCount = levelData.arrowCount;
 
   return (
-    <GameBackground type="game">
+    <GameBackground type="game" theme={theme}>
       <View style={styles.container}>
         {/* Top Header Section (Matching Reference Image 2) */}
         <View style={styles.header}>
@@ -95,11 +94,11 @@ export function GameScreen({
           {/* Center Title & Difficulty Badge */}
           <View style={styles.titleColumn}>
             <ThreeDText
-              text={isDaily ? 'DAILY' : `LEVEL ${levelNumber}`}
-              size={28}
+              text={isDaily ? 'DAILY CHALLENGE' : `LEVEL ${levelNumber}`}
+              size={titleSize}
               color="#FFE8A3"
               depthColor="#C77700"
-              depth={5}
+              depth={isNarrow ? 4 : 5}
               strokeColor="#6E3D00"
             />
             <TactilePill
@@ -112,7 +111,7 @@ export function GameScreen({
           {/* Circular 3D Pause Button */}
           <ThreeDButton
             icon="pause"
-            iconSize={22}
+            iconSize={isNarrow ? 20 : 22}
             colorScheme="circle-blue"
             size="circle"
             onPress={togglePause}
@@ -120,7 +119,7 @@ export function GameScreen({
         </View>
 
         {/* Wooden Statistics HUD Panel (Matching Reference Image 2) */}
-        <WoodenStatsHud
+        <GameStatsHud
           moves={moves}
           timer={timer}
           remaining={remainingCount}
@@ -141,25 +140,13 @@ export function GameScreen({
           />
         </View>
 
-        {/* Bottom 3D Action Buttons Deck (Matching Reference Image 2) */}
+        {/* Bottom 3D Action Buttons Deck (Hint & Reset) */}
         <View style={styles.bottomButtonsRow}>
-          {/* Undo Button (Glossy Dark Blue) */}
-          <ThreeDButton
-            title="Undo"
-            icon="arrow-undo"
-            iconSize={20}
-            colorScheme="blue"
-            size="md"
-            disabled={!canUndo}
-            onPress={handleUndo}
-            style={styles.actionBtn}
-          />
-
           {/* Hint Button (Glossy Warm Yellow/Orange) */}
           <ThreeDButton
             title="Hint"
             icon="bulb"
-            iconSize={20}
+            iconSize={isNarrow ? 18 : 22}
             colorScheme="yellow"
             size="md"
             onPress={handleHint}
@@ -170,17 +157,12 @@ export function GameScreen({
           <ThreeDButton
             title="Reset"
             icon="refresh"
-            iconSize={20}
+            iconSize={isNarrow ? 18 : 22}
             colorScheme="blue"
             size="md"
             onPress={handleRestart}
             style={styles.actionBtn}
           />
-
-          {/* Star Glint Sparkle */}
-          <View style={styles.sparkle} pointerEvents="none">
-            <Ionicons name="sparkles" size={22} color="rgba(255, 255, 255, 0.85)" />
-          </View>
         </View>
 
         {/* Pause Modal */}
@@ -192,11 +174,9 @@ export function GameScreen({
             handleRestart();
           }}
           onLevelSelect={() => {
-            togglePause();
             onNavigateLevelSelect();
           }}
           onHome={() => {
-            togglePause();
             onNavigateHome();
           }}
           soundEnabled={soundEnabled}
@@ -236,7 +216,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingVertical: 6,
-    position: 'relative',
     width: '100%',
     maxWidth: 480,
     alignSelf: 'center',
@@ -263,15 +242,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 12,
-    position: 'relative',
   },
   actionBtn: {
     flex: 1,
     marginHorizontal: 4,
-  },
-  sparkle: {
-    position: 'absolute',
-    right: 8,
-    bottom: 2,
   },
 });

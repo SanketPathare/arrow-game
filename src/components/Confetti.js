@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View, Animated, useWindowDimensions } from 'react-native';
 
 const COLORS = ['#38BDF8', '#818CF8', '#A855F7', '#FBBF24', '#10B981', '#F43F5E', '#EC4899'];
@@ -6,23 +6,29 @@ const COLORS = ['#38BDF8', '#818CF8', '#A855F7', '#FBBF24', '#10B981', '#F43F5E'
 export function Confetti({ count = 35 }) {
   const { width, height } = useWindowDimensions();
 
-  const particles = useRef(
-    Array.from({ length: count }).map(() => ({
-      animY: new Animated.Value(0),
-      animX: new Animated.Value(0),
-      animRotate: new Animated.Value(0),
-      startX: Math.random() * width,
-      size: Math.random() * 8 + 6,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      drift: (Math.random() - 0.5) * 80,
-      duration: Math.random() * 1200 + 1500,
-      delay: Math.random() * 400,
-    }))
-  ).current;
+  const particles = useMemo(
+    () => Array.from({ length: count }).map((_, index) => {
+      const seed = index + 1;
+      return {
+        animY: new Animated.Value(0),
+        animX: new Animated.Value(0),
+        animRotate: new Animated.Value(0),
+        startX: (((seed * 37) % 101) / 101) * width,
+        size: ((seed * 13) % 8) + 6,
+        color: COLORS[index % COLORS.length],
+        drift: ((((seed * 29) % 101) / 100) - 0.5) * 80,
+        duration: ((seed * 83) % 1200) + 1500,
+        delay: (seed * 47) % 400,
+      };
+    }),
+    [count, width]
+  );
 
   useEffect(() => {
+    const animations = [];
+
     particles.forEach((p) => {
-      Animated.parallel([
+      const animation = Animated.parallel([
         Animated.sequence([
           Animated.delay(p.delay),
           Animated.timing(p.animY, {
@@ -47,8 +53,12 @@ export function Confetti({ count = 35 }) {
             useNativeDriver: true,
           }),
         ]),
-      ]).start();
+      ]);
+      animation.start();
+      animations.push(animation);
     });
+
+    return () => animations.forEach((animation) => animation.stop());
   }, [height, particles]);
 
   return (

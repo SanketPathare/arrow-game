@@ -1,26 +1,31 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View, Animated, useWindowDimensions } from 'react-native';
 
 export function EnvironmentalParticles({ count = 16, color = '#FFE066' }) {
   const { width, height } = useWindowDimensions();
 
-  const particles = useRef(
-    Array.from({ length: count }).map(() => ({
-      x: Math.random() * (width - 20) + 10,
-      initialY: Math.random() * (height * 0.7) + height * 0.15,
-      size: Math.random() * 5 + 3,
+  const particles = useMemo(
+    () => Array.from({ length: count }).map((_, index) => {
+      const seed = index + 1;
+      return {
+      x: ((seed * 73) % 97) / 97 * Math.max(width - 20, 1) + 10,
+      initialY: ((seed * 47) % 89) / 89 * (height * 0.7) + height * 0.15,
+      size: ((seed * 13) % 5) + 3,
       animY: new Animated.Value(0),
       animX: new Animated.Value(0),
       animOpacity: new Animated.Value(0.2),
-      duration: Math.random() * 2500 + 3000,
-      driftY: (Math.random() - 0.5) * 45,
-      driftX: (Math.random() - 0.5) * 35,
-    }))
-  ).current;
+      duration: ((seed * 709) % 2500) + 3000,
+      driftY: (((seed * 17) % 101) / 100 - 0.5) * 45,
+      driftX: (((seed * 29) % 101) / 100 - 0.5) * 35,
+    };
+    }),
+    [count, width, height]
+  );
 
   useEffect(() => {
+    const loops = [];
+
     particles.forEach((p) => {
-      // Continuous floating loop
       const floatLoop = Animated.loop(
         Animated.sequence([
           Animated.parallel([
@@ -74,7 +79,10 @@ export function EnvironmentalParticles({ count = 16, color = '#FFE066' }) {
         ])
       );
       floatLoop.start();
+      loops.push(floatLoop);
     });
+
+    return () => loops.forEach((loop) => loop.stop());
   }, [particles]);
 
   return (

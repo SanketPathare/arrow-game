@@ -1,4 +1,4 @@
-import { checkArrowMove, getEscapableArrows } from './collisionDetection.js';
+import { getEscapableArrows } from './collisionDetection.js';
 
 /**
  * Validates whether a puzzle configuration is 100% solvable.
@@ -37,7 +37,7 @@ export function validatePuzzle(boardSize, arrows) {
 
 /**
  * Calculates star rating for a completed level.
- * @param {number} moves - Total moves taken (including blocked taps if counted)
+ * @param {number} moves - Successful arrows cleared
  * @param {number} arrowCount - Total number of arrows (minimum possible moves)
  * @param {number} timeSeconds - Total elapsed seconds
  * @returns {number} 1, 2, or 3 stars

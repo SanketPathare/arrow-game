@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { StyleSheet, View, Animated, Easing, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SvgArrowGraphic } from './SvgIcons.js';
 import { ThreeDText } from './ThreeDText.js';
 
 export function ThreeDEmblem({ size = 96, showTitle = true }) {
@@ -134,7 +134,7 @@ export function ThreeDEmblem({ size = 96, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#00F2FE" style={styles.arrowGlow} />
+              <SvgArrowGraphic size={arrowIconSize} dir="UP" state="normal" />
             </Animated.View>
 
             {/* Top-Right Arrow (Up-Right) */}
@@ -152,7 +152,7 @@ export function ThreeDEmblem({ size = 96, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#00F2FE" style={styles.arrowGlow} />
+              <SvgArrowGraphic size={arrowIconSize} dir="UP" state="normal" />
             </Animated.View>
 
             {/* Bottom-Left Arrow (Down-Left) */}
@@ -170,7 +170,7 @@ export function ThreeDEmblem({ size = 96, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#9D72FF" style={styles.arrowGlowPurple} />
+              <SvgArrowGraphic size={arrowIconSize} dir="UP" state="hinted" />
             </Animated.View>
 
             {/* Bottom-Right Arrow (Down-Right) */}
@@ -188,7 +188,7 @@ export function ThreeDEmblem({ size = 96, showTitle = true }) {
                 },
               ]}
             >
-              <Ionicons name="arrow-up" size={arrowIconSize} color="#9D72FF" style={styles.arrowGlowPurple} />
+              <SvgArrowGraphic size={arrowIconSize} dir="UP" state="hinted" />
             </Animated.View>
           </LinearGradient>
         </LinearGradient>

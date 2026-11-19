@@ -4,7 +4,6 @@ import {
   View,
   StatusBar,
   BackHandler,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { HomeScreen } from './src/screens/HomeScreen.js';
@@ -20,7 +19,7 @@ import { soundManager } from './src/utils/sound.js';
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('home'); // 'home' | 'game' | 'levelSelect' | 'settings'
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [splashFinished, setSplashFinished] = useState(false);
+  const [loadingSequenceComplete, setLoadingSequenceComplete] = useState(false);
 
   // Persistent user state
   const [unlockedLevel, setUnlockedLevel] = useState(1);
@@ -105,10 +104,13 @@ export default function App() {
   }, []);
 
   const handleResetProgress = useCallback(async () => {
-    await StorageService.resetAllProgress();
+    const resetSucceeded = await StorageService.resetAllProgress();
+    if (!resetSucceeded) return false;
+
     setUnlockedLevel(1);
     setLevelStats({});
     setDailyStats({});
+    return true;
   }, []);
 
   // Hardware Back Button handling for top-level navigation
@@ -125,20 +127,22 @@ export default function App() {
     return () => sub.remove();
   }, [currentScreen]);
 
-  const isReady = dataLoaded && splashFinished;
+  // App is ready when data is loaded from storage AND initial loading sequence completes
+  const isReady = dataLoaded && loadingSequenceComplete;
 
   return (
     <SafeAreaProvider>
       <View style={styles.rootContainer}>
         <StatusBar
-          barStyle="light-content"
+          barStyle={!isReady ? 'dark-content' : (settings.darkMode ? 'light-content' : 'dark-content')}
           backgroundColor="transparent"
           translucent={true}
         />
 
         {!isReady ? (
           <LoadingScreen
-            onLoaded={() => setSplashFinished(true)}
+            onFinish={() => setLoadingSequenceComplete(true)}
+            theme={theme}
           />
         ) : (
           <>

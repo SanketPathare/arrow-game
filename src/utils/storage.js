@@ -100,7 +100,7 @@ export const StorageService = {
         return JSON.parse(val);
       }
       return { streak: 0, lastPlayedDate: null, totalCompleted: 0 };
-    } catch (e) {
+    } catch (_e) {
       return { streak: 0, lastPlayedDate: null, totalCompleted: 0 };
     }
   },
@@ -137,12 +137,30 @@ export const StorageService = {
     }
   },
 
+  async getDailyGiftClaimedDate() {
+    try {
+      return await AsyncStorage.getItem(STORAGE_KEYS.DAILY_GIFT);
+    } catch (_e) {
+      return null;
+    }
+  },
+
+  async claimDailyGift(dateString) {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.DAILY_GIFT, dateString);
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  },
+
   async resetAllProgress() {
     try {
       await AsyncStorage.multiRemove([
         STORAGE_KEYS.UNLOCKED_LEVEL,
         STORAGE_KEYS.LEVEL_STATS,
         STORAGE_KEYS.DAILY_STATS,
+        STORAGE_KEYS.DAILY_GIFT,
       ]);
       return true;
     } catch (e) {

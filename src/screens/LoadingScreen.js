@@ -1,192 +1,419 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
   Text,
   Animated,
-  useWindowDimensions,
+  Easing,
+  StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { GameBackground } from '../components/GameBackground.js';
-import { ThreeDEmblem } from '../components/ThreeDEmblem.js';
+import { ThreeDText } from '../components/ThreeDText.js';
 
-const LOADING_STEPS = [
-  { progress: 25, text: 'Initializing 3D puzzle engine...' },
-  { progress: 55, text: 'Calibrating 50 escape stages...' },
-  { progress: 85, text: 'Restoring player progress...' },
-  { progress: 100, text: 'Escape routes ready!' },
-];
+export function LoadingScreen({ onFinish, theme }) {
+  // 1 = Minimalist LayerNLooms Studio (white background)
+  // 2 = 3D App Theme Loading (Arrow Escape, Starting, 3D Spinner, 3D Loading Bar)
+  const [frame, setFrame] = useState(1);
 
-export function LoadingScreen({ onLoaded }) {
-  const { width } = useWindowDimensions();
-  const [statusText, setStatusText] = useState('Initializing 3D puzzle engine...');
-  const [percent, setPercent] = useState(0);
+  // Animations for Frame 1
+  const frame1Opacity = useRef(new Animated.Value(0)).current;
 
+  // Animations for Frame 2
+  const frame2Opacity = useRef(new Animated.Value(0)).current;
+  const spinnerRotate = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const barWidth = Math.min(width - 64, 300);
-
+  // Frame 1: Clean White LayerNLooms Studio
   useEffect(() => {
-    // Listen to progress updates to update numeric percentage
-    const id = progressAnim.addListener(({ value }) => {
-      setPercent(Math.floor(value * 100));
-    });
+    if (frame !== 1) return;
 
-    // Animate progress through stages
-    Animated.sequence([
-      Animated.timing(progressAnim, {
-        toValue: 0.35,
-        duration: 380,
-        useNativeDriver: false,
-      }),
-      Animated.timing(progressAnim, {
-        toValue: 0.75,
-        duration: 480,
-        useNativeDriver: false,
-      }),
-      Animated.timing(progressAnim, {
-        toValue: 1.0,
-        duration: 380,
-        useNativeDriver: false,
-      }),
-    ]).start(() => {
-      // Short delay at 100% then fade out to home screen
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
+    Animated.timing(frame1Opacity, {
+      toValue: 1,
+      duration: 600,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+
+    const timer = setTimeout(() => {
+      Animated.timing(frame1Opacity, {
+        toValue: 0,
+        duration: 400,
+        easing: Easing.in(Easing.ease),
+        useNativeDriver: true,
+      }).start(() => {
+        setFrame(2);
+      });
+    }, 1800);
+
+    return () => clearTimeout(timer);
+  }, [frame, frame1Opacity]);
+
+  // Frame 2: 3D App Theme Loading (5.0 Seconds)
+  useEffect(() => {
+    if (frame !== 2) return;
+
+    // Fade in Frame 2
+    Animated.timing(frame2Opacity, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
+
+    // Pulse loop for the Starting dot
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.3, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 0.8, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    pulseLoop.start();
+
+    // Smooth continuous spinner rotation
+    const spinLoop = Animated.loop(
+      Animated.timing(spinnerRotate, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    spinLoop.start();
+
+    // 5-second loading progression matching app theme
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 5000,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+      useNativeDriver: false, // For width interpolation
+    }).start(({ finished }) => {
+      if (finished) {
+        Animated.timing(frame2Opacity, {
           toValue: 0,
-          duration: 320,
+          duration: 300,
           useNativeDriver: true,
         }).start(() => {
-          if (onLoaded) onLoaded();
+          spinLoop.stop();
+          pulseLoop.stop();
+          if (onFinish) onFinish();
         });
-      }, 250);
+      }
     });
 
-    // Step text updates
-    const t1 = setTimeout(() => setStatusText(LOADING_STEPS[1].text), 380);
-    const t2 = setTimeout(() => setStatusText(LOADING_STEPS[2].text), 860);
-    const t3 = setTimeout(() => setStatusText(LOADING_STEPS[3].text), 1240);
-
     return () => {
-      progressAnim.removeListener(id);
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
+      spinLoop.stop();
+      pulseLoop.stop();
     };
-  }, [progressAnim, fadeAnim, onLoaded]);
+  }, [frame, frame2Opacity, spinnerRotate, progressAnim, pulseAnim, onFinish]);
 
-  const fillWidth = progressAnim.interpolate({
+  const spin = spinnerRotate.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, barWidth],
+    outputRange: ['0deg', '360deg'],
   });
 
+  // ----------------------------------------------------
+  // Frame 1: Clean, White Background with LayerNLooms Studio
+  // ----------------------------------------------------
+  if (frame === 1) {
+    return (
+      <View style={styles.whiteContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <Animated.View style={{ opacity: frame1Opacity }}>
+          <Text style={styles.studioText}>LayerNLooms Studio</Text>
+        </Animated.View>
+      </View>
+    );
+  }
+
+  // ----------------------------------------------------
+  // Frame 2: 3D App Theme Loading (Matched to Arrow Game Theme)
+  // ----------------------------------------------------
   return (
-    <Animated.View style={[styles.outerFade, { opacity: fadeAnim }]}>
-      <GameBackground type="home">
-        <View style={styles.container}>
-          {/* Main 3D Emblem & Title */}
-          <View style={styles.logoSection}>
-            <ThreeDEmblem size={130} showTitle={true} />
+    <GameBackground type="home" theme={theme}>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <Animated.View
+        style={[
+          styles.themeContainer,
+          {
+            opacity: frame2Opacity,
+          },
+        ]}
+      >
+        <View style={styles.contentStack}>
+          {/* 3D Extruded Game Title */}
+          <View style={styles.titleWrapper}>
+            <ThreeDText
+              text="Arrow Escape"
+              size={34}
+              color="#FFE8A3"
+              depthColor="#C77700"
+              depth={5}
+              strokeColor="#6E3D00"
+            />
           </View>
 
-          {/* Loading Progress Section */}
-          <View style={styles.loadingSection}>
-            <View style={[styles.progressTrack, { width: barWidth }]}>
-              <Animated.View style={[styles.progressFill, { width: fillWidth }]}>
+          {/* 3D Tactile 'Starting' Indicator Pill */}
+          <View style={styles.startingPillWrapper}>
+            <View style={styles.startingPillShadow} />
+            <LinearGradient
+              colors={['#1E293B', '#111B2E', '#0B1222']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.startingPillFace}
+            >
+              <View style={styles.pillTopSheen} />
+              <Animated.View style={[styles.pulseDot, { transform: [{ scale: pulseAnim }] }]} />
+              <Text style={styles.startingText}>Starting</Text>
+            </LinearGradient>
+          </View>
+
+          {/* 3D Glowing Circular Spinner */}
+          <View style={styles.spinnerContainer}>
+            <Animated.View style={{ transform: [{ rotate: spin }] }}>
+              <Svg width={46} height={46} viewBox="0 0 46 46">
+                <Defs>
+                  <SvgLinearGradient id="spinnerGrad" x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0%" stopColor="#00F2FE" />
+                    <Stop offset="50%" stopColor="#38BDF8" />
+                    <Stop offset="100%" stopColor="#0284C7" />
+                  </SvgLinearGradient>
+                </Defs>
+
+                {/* Recessed socket well ring */}
+                <Circle
+                  cx="23"
+                  cy="23"
+                  r="18"
+                  stroke="#080E1C"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <Circle
+                  cx="23"
+                  cy="23"
+                  r="18"
+                  stroke="rgba(56, 189, 248, 0.14)"
+                  strokeWidth="3.5"
+                  fill="none"
+                />
+
+                {/* Glowing cyan active rotation arc */}
+                <Circle
+                  cx="23"
+                  cy="23"
+                  r="18"
+                  stroke="url(#spinnerGrad)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray="34 80"
+                  fill="none"
+                />
+              </Svg>
+            </Animated.View>
+
+            {/* Tactile Loading Text */}
+            <Text style={styles.loadingText}>Loading</Text>
+          </View>
+
+          {/* 3D Chunky Beveled Loading Progress Bar */}
+          <View style={styles.progressBox}>
+            {/* 3D Underlay Bevel */}
+            <View style={styles.progressBevel} />
+
+            {/* Recessed Socket Well */}
+            <View style={styles.progressTrack}>
+              <Animated.View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: progressAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ['0%', '100%'],
+                    }),
+                  },
+                ]}
+              >
                 <LinearGradient
-                  colors={['#00F2FE', '#2563EB', '#818CF8']}
+                  colors={['#38D9F8', '#00F2FE', '#0284C7']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={StyleSheet.absoluteFill}
                 />
+                {/* Top Gloss Sheen */}
+                <View style={styles.progressTopSheen} />
+                {/* Leading Edge Spark */}
+                <View style={styles.leadingSpark} />
               </Animated.View>
             </View>
-
-            <View style={[styles.statusRow, { width: barWidth }]}>
-              <Text style={styles.statusText}>{statusText}</Text>
-              <Text style={styles.percentText}>{percent}%</Text>
-            </View>
-          </View>
-
-          {/* Footer credits */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              TACTICAL 3D PUZZLE • EXPO GO READY
-            </Text>
           </View>
         </View>
-      </GameBackground>
-    </Animated.View>
+      </Animated.View>
+    </GameBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  outerFade: {
+  // Frame 1: White Minimalist Studio Screen
+  whiteContainer: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 36,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
-  logoSection: {
+  studioText: {
+    color: '#0F172A',
+    fontSize: 22,
+    fontWeight: '400',
+    letterSpacing: 3,
+    textAlign: 'center',
+  },
+
+  // Frame 2: 3D App Theme Match
+  themeContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingSection: {
+  contentStack: {
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: 24,
   },
-  progressTrack: {
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: 'rgba(22, 38, 66, 0.9)',
+  titleWrapper: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+
+  // 3D Starting Pill
+  startingPillWrapper: {
+    position: 'relative',
+    marginBottom: 44,
+  },
+  startingPillShadow: {
+    position: 'absolute',
+    top: 3,
+    left: 0,
+    right: 0,
+    bottom: -3,
+    borderRadius: 20,
+    backgroundColor: '#020617',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  startingPillFace: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: '#4A6FA5',
+    borderColor: 'rgba(56, 189, 248, 0.4)',
     overflow: 'hidden',
     position: 'relative',
-    padding: 1.5,
+  },
+  pillTopSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '42%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  pulseDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#00F2FE',
+    marginRight: 8,
+    shadowColor: '#00F2FE',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  startingText: {
+    color: '#F8FAFC',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+  },
+
+  // 3D Spinner & Loading text
+  spinnerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 36,
+  },
+  loadingText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    marginTop: 16,
+    textTransform: 'uppercase',
+  },
+
+  // 3D Chunky Loading Progress Bar
+  progressBox: {
+    position: 'relative',
+    height: 14,
+    width: '100%',
+    maxWidth: 260,
+  },
+  progressBevel: {
+    position: 'absolute',
+    top: 2,
+    left: 0,
+    right: 0,
+    bottom: -2,
+    borderRadius: 8,
+    backgroundColor: '#020617',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  progressTrack: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#090F1C',
+    borderRadius: 7,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+    justifyContent: 'center',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
-    overflow: 'hidden',
+    borderRadius: 6,
+    position: 'relative',
   },
-  statusRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
+  progressTopSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '45%',
+    backgroundColor: 'rgba(255, 255, 255, 0.28)',
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#D4E6FA',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  percentText: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#00F2FE',
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#8CAECF',
-    letterSpacing: 1.5,
+  leadingSpark: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 3,
   },
 });

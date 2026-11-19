@@ -20,15 +20,22 @@
   - Smooth arrow exit flight animations out of the board.
   - Blocked arrow shake feedback with red alert glow.
   - Smart Hint system identifying optimal moves that unlock downstream paths with a glowing gold pulse.
-  - Undo functionality allowing players to step backwards.
+  - Undo restores both the previous board and successful-move count.
+  - Arrow input stays locked during exit animations to prevent accidental double moves.
   - Move counter, active timer, and 3-star rating metric.
+  - Pause, resume, restart, and level-exit actions preserve the expected timer state.
 
 - **Screens**:
-  1. **Home Screen**: Game emblem, quick stats (Completed levels, Total stars, Streak), Play/Continue, Level Selection, Daily Challenge, Settings, and an interactive "How to Play" tutorial modal.
-  2. **Gameplay Screen**: Centered dynamic board, live stats bar, Undo, Hint, Restart, and Pause modal.
-  3. **Level Selection Screen**: Grid view of all 50 levels with locked/unlocked state, star badges, and difficulty category filters.
+  1. **Home Screen**: Game emblem, campaign progress, stars and streak, Continue, level selection, daily challenge, Settings, and an interactive "How to Play" guide.
+  2. **Gameplay Screen**: Responsive puzzle board, live stats, Undo, Hint, Restart, and a glass-style pause menu.
+  3. **Level Selection Screen**: Responsive grid of all 50 levels with locked/unlocked states, star badges, and difficulty filters.
   4. **Settings Screen**: Sound effects toggle, Haptic feedback toggle, Dark/Light theme toggle, and progress reset confirmation dialog.
-  5. **Level Complete Screen**: Celebration overlay with particle confetti, sequential star bounce animations, moves/time recap, and next level navigation.
+  5. **Level Complete Screen**: Celebration overlay with particle confetti, sequential star animations, a moves/time recap, and next-level navigation.
+
+- **Responsive Presentation & Loading**:
+  - Home and game surfaces adapt their illustrated background and color palette to the selected theme.
+  - Safe-area spacing and level-grid columns adapt to device dimensions.
+  - Startup shows a lightweight indicator only while saved player data is being read; it does not simulate progress or add a fixed splash delay.
 
 - **Storage & State Persistence**:
   - Uses `@react-native-async-storage/async-storage` for local saving of unlocked levels, level stars, best moves/time, settings, and daily streaks.
@@ -50,6 +57,8 @@ arrow-escape/
 │   │   ├── GameButton.js          # Reusable styled button with haptics
 │   │   ├── GameHeader.js          # Top header and live stats bar
 │   │   ├── LevelCard.js           # Level selection card component
+│   │   ├── CampaignProgressCard.js # Home progress and reward summary
+│   │   ├── GameStatsHud.js        # Live moves, timer, and remaining count
 │   │   ├── PauseModal.js          # Pause menu with quick toggles
 │   │   ├── LevelCompleteModal.js  # Victory celebration modal
 │   │   └── Confetti.js            # Particle confetti animation

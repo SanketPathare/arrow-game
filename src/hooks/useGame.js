@@ -27,6 +27,17 @@ export function useGame() {
   const [hintArrowId, setHintArrowId] = useState(null);
 
   const timerRef = useRef(null);
+  const resolutionTimerRef = useRef(null);
+  const blockedTimeoutRef = useRef(null);
+  const hintTimeoutRef = useRef(null);
+  const resolvingRef = useRef(false);
+  const gameSessionRef = useRef(0);
+
+  useEffect(() => () => {
+    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
+    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+  }, []);
 
   // Timer interval
   useEffect(() => {
@@ -44,6 +55,12 @@ export function useGame() {
 
   // Load level
   const loadLevel = useCallback((lvl, isDailyChallenge = false, customDate = '') => {
+    gameSessionRef.current += 1;
+    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
+    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    resolvingRef.current = false;
+
     let data;
     if (isDailyChallenge) {
       const today = customDate || new Date().toISOString().split('T')[0];
@@ -77,7 +94,7 @@ export function useGame() {
   // Handle arrow tap
   const handleArrowPress = useCallback(
     (arrowId) => {
-      if (isCompleted || isPaused || exitingArrowIds.has(arrowId)) return;
+      if (isCompleted || isPaused || resolvingRef.current || exitingArrowIds.has(arrowId)) return;
 
       // Clear any active hint
       if (hintArrowId) setHintArrowId(null);
@@ -98,14 +115,17 @@ export function useGame() {
         if (blockingArrow) setBlockingArrowId(blockingArrow.id);
 
         // Reset shake after animation duration
-        setTimeout(() => {
+        if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+        blockedTimeoutRef.current = setTimeout(() => {
           setBlockedArrowId(null);
           setBlockingArrowId(null);
+          blockedTimeoutRef.current = null;
         }, 500);
         return;
       }
 
       // Can escape!
+      resolvingRef.current = true;
       soundManager.playEscapeSound();
 
       // Track undo
@@ -121,36 +141,38 @@ export function useGame() {
       // Mark arrow as exiting (triggers exit flight animation)
       setExitingArrowIds((prev) => new Set([...prev, arrow.id]));
       setMoves((m) => m + 1);
+      const sessionId = gameSessionRef.current;
 
       // Remove from active after brief exit flight
-      setTimeout(() => {
-        setActiveArrows((current) => {
-          const updated = current.filter((a) => a.id !== arrow.id);
+      resolutionTimerRef.current = setTimeout(async () => {
+        resolutionTimerRef.current = null;
+        if (sessionId !== gameSessionRef.current) return;
+        const updated = activeArrows.filter((a) => a.id !== arrow.id);
+        setActiveArrows(updated);
 
-          // Check if board is cleared
-          if (updated.length === 0) {
-            const finalMoves = moves + 1;
-            const earnedStars = calculateStars(finalMoves, levelData.arrowCount, timer);
-            setIsCompleted(true);
-            setIsPlaying(false);
-            setStars(earnedStars);
-            soundManager.playVictorySound();
+        if (updated.length === 0) {
+          const finalMoves = moves + 1;
+          const earnedStars = calculateStars(finalMoves, levelData.arrowCount, timer);
+          setIsPlaying(false);
+          setStars(earnedStars);
 
-            if (!isDaily && typeof levelNumber === 'number') {
-              StorageService.saveLevelResult(levelNumber, earnedStars, finalMoves, timer);
-            } else if (isDaily && dailyDate) {
-              StorageService.recordDailyCompletion(dailyDate);
-            }
+          if (!isDaily && typeof levelNumber === 'number') {
+            await StorageService.saveLevelResult(levelNumber, earnedStars, finalMoves, timer);
+          } else if (isDaily && dailyDate) {
+            await StorageService.recordDailyCompletion(dailyDate);
           }
 
-          return updated;
-        });
+          if (sessionId !== gameSessionRef.current) return;
+          setIsCompleted(true);
+          soundManager.playVictorySound();
+        }
 
         setExitingArrowIds((prev) => {
           const next = new Set(prev);
           next.delete(arrow.id);
           return next;
         });
+        resolvingRef.current = false;
       }, 350);
     },
     [
@@ -170,7 +192,7 @@ export function useGame() {
 
   // Undo last move
   const handleUndo = useCallback(() => {
-    if (undoStack.length === 0 || isCompleted || isPaused) return;
+    if (undoStack.length === 0 || isCompleted || isPaused || resolvingRef.current) return;
 
     soundManager.playClickSound();
     const lastEntry = undoStack[undoStack.length - 1];
@@ -178,6 +200,7 @@ export function useGame() {
 
     // Restore arrows and state
     setActiveArrows(lastEntry.prevActiveArrows);
+    setMoves(lastEntry.prevMoves);
     setExitingArrowIds(new Set());
     setBlockedArrowId(null);
     setBlockingArrowId(null);
@@ -186,15 +209,17 @@ export function useGame() {
 
   // Request a hint
   const handleHint = useCallback(() => {
-    if (isCompleted || isPaused || activeArrows.length === 0 || !levelData) return;
+    if (isCompleted || isPaused || resolvingRef.current || activeArrows.length === 0 || !levelData) return;
 
     soundManager.playClickSound();
     const best = getBestHintArrow(activeArrows, levelData.boardSize);
     if (best) {
       setHintArrowId(best.id);
       // Automatically clear hint after 3.5s
-      setTimeout(() => {
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+      hintTimeoutRef.current = setTimeout(() => {
         setHintArrowId((curr) => (curr === best.id ? null : curr));
+        hintTimeoutRef.current = null;
       }, 3500);
     }
   }, [isCompleted, isPaused, activeArrows, levelData]);
@@ -202,6 +227,11 @@ export function useGame() {
   // Restart level
   const handleRestart = useCallback(() => {
     soundManager.playClickSound();
+    gameSessionRef.current += 1;
+    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
+    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    resolvingRef.current = false;
     if (levelData) {
       setActiveArrows([...levelData.arrows]);
       setExitingArrowIds(new Set());
@@ -250,7 +280,7 @@ export function useGame() {
     blockedArrowId,
     blockingArrowId,
     hintArrowId,
-    canUndo: undoStack.length > 0 && !isCompleted,
+    canUndo: undoStack.length > 0 && !isCompleted && exitingArrowIds.size === 0,
     loadLevel,
     handleArrowPress,
     handleUndo,

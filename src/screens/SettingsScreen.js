@@ -5,13 +5,12 @@ import {
   Text,
   Switch,
   ScrollView,
-  Modal,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { ThreeDModalPlaque } from '../components/ThreeDModalPlaque.js';
 import { soundManager } from '../utils/sound.js';
+import { SvgSound, SvgHaptic, SvgTheme, SvgTrash } from '../components/SvgIcons.js';
 
 export function SettingsScreen({
   settings,
@@ -21,6 +20,7 @@ export function SettingsScreen({
   theme,
 }) {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetError, setResetError] = useState('');
 
   const toggleSound = (val) => {
     soundManager.playClickSound();
@@ -39,12 +39,17 @@ export function SettingsScreen({
 
   const confirmReset = async () => {
     soundManager.playClickSound();
-    await onResetProgress();
-    setShowResetConfirm(false);
+    setResetError('');
+    const resetSucceeded = await onResetProgress();
+    if (resetSucceeded) {
+      setShowResetConfirm(false);
+    } else {
+      setResetError('Progress could not be reset. Please try again.');
+    }
   };
 
   return (
-    <GameBackground type="home">
+    <GameBackground type="home" theme={theme}>
       <View style={styles.container}>
         {/* Top Header */}
         <View style={styles.header}>
@@ -56,21 +61,25 @@ export function SettingsScreen({
             onPress={onBack}
           />
           <Text style={styles.title}>SETTINGS</Text>
-          <View style={{ width: 52 }} />
+          <View style={styles.headerSpacer} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollWrapper}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Audio & Feedback Section */}
-          <Text style={styles.sectionHeader}>SYSTEM AUDIO & HAPTICS</Text>
+          <Text style={styles.sectionHeader}>SOUND & FEEDBACK</Text>
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 254, 0.16)' }]}>
-                  <Ionicons name="volume-high" size={20} color="#00F2FE" />
+                  <SvgSound size={20} color="#00F2FE" muted={!settings.soundEnabled} />
                 </View>
                 <View>
                   <Text style={styles.rowTitle}>Sound Effects</Text>
-                  <Text style={styles.rowSubtitle}>Audio feedback on moves and extraction</Text>
+                  <Text style={styles.rowSubtitle}>Sound cues for taps, moves, and wins</Text>
                 </View>
               </View>
               <Switch
@@ -86,10 +95,10 @@ export function SettingsScreen({
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 209, 59, 0.16)' }]}>
-                  <Ionicons name="hardware-chip" size={20} color="#FFD13B" />
+                  <SvgHaptic size={20} color="#FFD13B" enabled={settings.hapticsEnabled} />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Haptic Tactile</Text>
+                  <Text style={styles.rowTitle}>Haptic feedback</Text>
                   <Text style={styles.rowSubtitle}>Vibrate on escape or blocked collision</Text>
                 </View>
               </View>
@@ -103,20 +112,20 @@ export function SettingsScreen({
           </View>
 
           {/* Theme Section */}
-          <Text style={styles.sectionHeader}>INTERFACE THEME</Text>
+          <Text style={styles.sectionHeader}>APPEARANCE</Text>
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(129, 140, 248, 0.16)' }]}>
-                  <Ionicons
-                    name={settings.darkMode ? 'moon' : 'sunny'}
+                  <SvgTheme
                     size={20}
+                    darkMode={settings.darkMode}
                     color={settings.darkMode ? '#818CF8' : '#FFD13B'}
                   />
                 </View>
                 <View>
-                  <Text style={styles.rowTitle}>Dark Fantasy Atmosphere</Text>
-                  <Text style={styles.rowSubtitle}>Magical night forest aesthetic</Text>
+                  <Text style={styles.rowTitle}>Dark theme</Text>
+                  <Text style={styles.rowSubtitle}>Choose a moonlit or daylight palette</Text>
                 </View>
               </View>
               <Switch
@@ -129,12 +138,12 @@ export function SettingsScreen({
           </View>
 
           {/* Data Section */}
-          <Text style={styles.sectionHeader}>DATA MANAGEMENT</Text>
+          <Text style={styles.sectionHeader}>PLAYER DATA</Text>
           <View style={[styles.card, styles.dangerCard]}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 42, 109, 0.16)' }]}>
-                  <Ionicons name="trash-outline" size={20} color="#FF2A6D" />
+                  <SvgTrash size={20} color="#FF2A6D" />
                 </View>
                 <View>
                   <Text style={styles.rowTitle}>Reset Progress</Text>
@@ -154,8 +163,8 @@ export function SettingsScreen({
 
           {/* Footer Info */}
           <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>ARROW ESCAPE • 3D CARTOON EDITION</Text>
-            <Text style={styles.infoSubtitle}>Pure Native React Native & Expo SDK 58</Text>
+            <Text style={styles.infoTitle}>ARROW ESCAPE</Text>
+            <Text style={styles.infoSubtitle}>A thoughtful puzzle, one move at a time.</Text>
           </View>
         </ScrollView>
 
@@ -170,8 +179,9 @@ export function SettingsScreen({
         >
           <View style={styles.confirmBox}>
             <Text style={styles.confirmDesc}>
-              This will irreversibly reset all 50 unlocked levels, stars, and campaign progress back to Level 1.
+              This resets your unlocked levels, stars, and campaign progress to Level 1.
             </Text>
+            {resetError ? <Text style={styles.resetError}>{resetError}</Text> : null}
           </View>
 
           <View style={styles.modalActionRow}>
@@ -212,6 +222,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
+  headerSpacer: {
+    width: 48,
+    height: 48,
+  },
   title: {
     fontSize: 22,
     fontWeight: '900',
@@ -221,7 +235,12 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 3,
   },
+  scrollWrapper: {
+    flex: 1,
+    width: '100%',
+  },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 18,
     paddingBottom: 40,
   },
@@ -314,6 +333,13 @@ const styles = StyleSheet.create({
     color: '#D4B59D',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  resetError: {
+    color: '#FB7185',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 10,
   },
   modalActionRow: {
     flexDirection: 'row',

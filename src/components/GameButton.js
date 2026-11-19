@@ -6,9 +6,9 @@ import {
   Animated,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { soundManager } from '../utils/sound.js';
+import { GameSvgIcon } from './SvgIcons.js';
 
 export function GameButton({
   title,
@@ -122,12 +122,13 @@ export function GameButton({
 
         <View style={styles.contentRow}>
           {icon ? (
-            <Ionicons
-              name={icon}
-              size={iconSize}
-              color={textColor}
-              style={title ? { marginRight: 8 } : {}}
-            />
+            <View style={title ? { marginRight: 8 } : null}>
+              <GameSvgIcon
+                name={icon}
+                size={iconSize}
+                color={textColor}
+              />
+            </View>
           ) : null}
           {title ? (
             <Text

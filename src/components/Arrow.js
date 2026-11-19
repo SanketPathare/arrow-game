@@ -5,9 +5,9 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { DIRECTIONS } from '../utils/constants.js';
+import { DIRECTIONS, DIRECTION_CONFIG } from '../utils/constants.js';
+import { SvgArrowGraphic, SvgFlightTrail } from './SvgIcons.js';
 
 export const Arrow = React.memo(function Arrow({
   arrow,
@@ -17,6 +17,7 @@ export const Arrow = React.memo(function Arrow({
   isBlocking,
   isHinted,
   isExiting,
+  isResolving = false,
   onPress,
 }) {
   const { dir, id } = arrow;
@@ -27,17 +28,17 @@ export const Arrow = React.memo(function Arrow({
   const hintPulseAnim = useRef(new Animated.Value(1)).current;
   const pressDepthAnim = useRef(new Animated.Value(0)).current;
 
-  // Blocked shake effect
+  // Blocked shake effect with snappy rebound
   useEffect(() => {
     if (isBlocked) {
       shakeAnim.setValue(0);
       Animated.sequence([
-        Animated.timing(shakeAnim, { toValue: 12, duration: 45, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -12, duration: 45, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 8, duration: 45, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: -8, duration: 45, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 4, duration: 40, useNativeDriver: true }),
-        Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 10, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -10, duration: 40, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 7, duration: 35, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: -7, duration: 35, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 3, duration: 30, useNativeDriver: true }),
+        Animated.timing(shakeAnim, { toValue: 0, duration: 30, useNativeDriver: true }),
       ]).start();
     }
   }, [isBlocked, shakeAnim]);
@@ -49,12 +50,12 @@ export const Arrow = React.memo(function Arrow({
         Animated.sequence([
           Animated.timing(hintPulseAnim, {
             toValue: 1.12,
-            duration: 350,
+            duration: 340,
             useNativeDriver: true,
           }),
           Animated.timing(hintPulseAnim, {
-            toValue: 0.96,
-            duration: 350,
+            toValue: 0.94,
+            duration: 340,
             useNativeDriver: true,
           }),
         ])
@@ -72,14 +73,14 @@ export const Arrow = React.memo(function Arrow({
       exitAnim.setValue(0);
       Animated.timing(exitAnim, {
         toValue: 1,
-        duration: 280,
+        duration: 290,
         useNativeDriver: true,
       }).start();
     }
   }, [isExiting, exitAnim]);
 
   // Calculate translation vectors based on direction
-  const exitDistance = cellSize * 8;
+  const exitDistance = cellSize * 7.5;
   let exitTranslateX = 0;
   let exitTranslateY = 0;
 
@@ -129,53 +130,33 @@ export const Arrow = React.memo(function Arrow({
     }).start();
   };
 
-  // Determine colors based on state
-  let faceGradient = ['#53C3F8', '#2AA7EC', '#1080D0'];
-  let bevelColor = '#0B5994';
-  let shadowColor = '#063459';
+  // Determine state for 2D styling
+  let arrowState = 'normal';
+  let faceGradient = ['#38BDF8', '#0284C7', '#0369A1'];
+  let bevelColor = '#075985';
+  let shadowColor = '#082F49';
 
   if (isBlocked) {
-    faceGradient = ['#FF4E6B', '#E5173F', '#B30B2D'];
-    bevelColor = '#6A0217';
-    shadowColor = '#3D000C';
+    arrowState = 'blocked';
+    faceGradient = ['#FF4E50', '#E11D48', '#9F1239'];
+    bevelColor = '#881337';
+    shadowColor = '#4C0519';
   } else if (isBlocking) {
-    faceGradient = ['#FFA347', '#E8660B', '#B84900'];
-    bevelColor = '#6E2B00';
-    shadowColor = '#3B1700';
+    arrowState = 'blocking';
+    faceGradient = ['#FB923C', '#EA580C', '#C2410C'];
+    bevelColor = '#9A3412';
+    shadowColor = '#431407';
   } else if (isHinted) {
-    faceGradient = ['#FFE066', '#FFB703', '#FB8500'];
-    bevelColor = '#B25000';
-    shadowColor = '#592500';
+    arrowState = 'hinted';
+    faceGradient = ['#FDE047', '#EAB308', '#CA8A04'];
+    bevelColor = '#A16207';
+    shadowColor = '#422006';
   }
 
-  const padding = Math.max(2, Math.floor(cellSize * 0.06));
+  const padding = Math.max(2, Math.floor(cellSize * 0.05));
   const tileSize = cellSize - padding * 2;
-  const borderRadius = Math.max(10, Math.floor(tileSize * 0.28));
-  const iconSize = Math.max(16, Math.floor(tileSize * 0.46));
-  const dotSize = Math.max(4, Math.floor(tileSize * 0.12));
-
-  // Arrow icon configuration matching Image 2
-  let iconName = 'arrow-up';
-  let isRow = false;
-  let dotFirst = false;
-
-  if (dir === DIRECTIONS.DOWN) {
-    iconName = 'arrow-down';
-    isRow = false;
-    dotFirst = true; // dot at top
-  } else if (dir === DIRECTIONS.UP) {
-    iconName = 'arrow-up';
-    isRow = false;
-    dotFirst = false; // dot at bottom
-  } else if (dir === DIRECTIONS.LEFT) {
-    iconName = 'arrow-back';
-    isRow = true;
-    dotFirst = true; // dot at right (or left based on icon orientation)
-  } else if (dir === DIRECTIONS.RIGHT) {
-    iconName = 'arrow-forward';
-    isRow = true;
-    dotFirst = false; // dot at left
-  }
+  const borderRadius = Math.max(8, Math.floor(tileSize * 0.26));
+  const graphicSize = Math.max(22, Math.floor(tileSize * 0.72));
 
   return (
     <Animated.View
@@ -193,19 +174,45 @@ export const Arrow = React.memo(function Arrow({
             { scale: isHinted ? hintPulseAnim : 1 },
           ],
           opacity: exitAnim.interpolate({
-            inputRange: [0, 0.7, 1],
-            outputRange: [1, 0.4, 0],
+            inputRange: [0, 0.75, 1],
+            outputRange: [1, 0.5, 0],
           }),
         },
       ]}
     >
+      {/* Dynamic 2D SVG Jet Flight Trail */}
+      {isExiting && (
+        <View
+          style={[
+            styles.trailContainer,
+            dir === DIRECTIONS.UP && { bottom: -tileSize * 0.4 },
+            dir === DIRECTIONS.DOWN && { top: -tileSize * 0.4 },
+            dir === DIRECTIONS.LEFT && { right: -tileSize * 0.4 },
+            dir === DIRECTIONS.RIGHT && { left: -tileSize * 0.4 },
+          ]}
+          pointerEvents="none"
+        >
+          <SvgFlightTrail
+            width={tileSize * 0.9}
+            height={tileSize * 1.1}
+            dir={dir}
+          />
+        </View>
+      )}
+
       <Pressable
         onPress={() => onPress(id)}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={styles.pressable}
+        disabled={isResolving || isExiting}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel={`${DIRECTION_CONFIG[dir].name} arrow`}
+        accessibilityHint="Tap to clear the arrow if its path to the edge is open."
+        accessibilityState={{ disabled: isResolving || isExiting }}
+        style={[styles.pressable, (isResolving || isExiting) && styles.disabled]}
       >
-        {/* 3D Bottom Extrusion Bevel */}
+        {/* 2D Bevel Underlay */}
         <View
           style={[
             styles.bevelUnderlay,
@@ -219,7 +226,7 @@ export const Arrow = React.memo(function Arrow({
           ]}
         />
 
-        {/* Depressable 3D Tile Face */}
+        {/* Depressable 2D Tile Face */}
         <Animated.View
           style={[
             styles.tileFaceWrapper,
@@ -238,82 +245,15 @@ export const Arrow = React.memo(function Arrow({
             style={[styles.tileFace, { borderRadius }]}
           >
             {/* Top Gloss Specular Highlight Sheen */}
-            <View style={[styles.topSpecularSheen, { borderRadius: borderRadius * 0.9 }]} />
+            <View style={[styles.topSpecularSheen, { borderRadius: borderRadius * 0.85 }]} />
 
-            {/* Custom 3D Arrow Graphic with Distinctive Dot (Matching Image 2) */}
-            <View
-              style={[
-                styles.arrowGroup,
-                isRow ? styles.arrowRow : styles.arrowCol,
-              ]}
-            >
-              {/* If Left arrow, dot is on left/tail */}
-              {dir === DIRECTIONS.LEFT && (
-                <View
-                  style={[
-                    styles.characterDot,
-                    {
-                      width: dotSize,
-                      height: dotSize,
-                      borderRadius: dotSize / 2,
-                      marginRight: 2,
-                    },
-                  ]}
-                />
-              )}
-
-              {/* Arrow Icon */}
-              <Ionicons
-                name={iconName}
-                size={iconSize}
-                color="#FFFFFF"
-                style={styles.icon3dShadow}
+            {/* Custom 2D SVG Arrow Graphic */}
+            <View style={styles.arrowGraphicContainer}>
+              <SvgArrowGraphic
+                size={graphicSize}
+                dir={dir}
+                state={arrowState}
               />
-
-              {/* If Right arrow, dot is on right */}
-              {dir === DIRECTIONS.RIGHT && (
-                <View
-                  style={[
-                    styles.characterDot,
-                    {
-                      width: dotSize,
-                      height: dotSize,
-                      borderRadius: dotSize / 2,
-                      marginLeft: 2,
-                    },
-                  ]}
-                />
-              )}
-
-              {/* If Down arrow, dot is at bottom */}
-              {dir === DIRECTIONS.DOWN && (
-                <View
-                  style={[
-                    styles.characterDot,
-                    {
-                      width: dotSize,
-                      height: dotSize,
-                      borderRadius: dotSize / 2,
-                      marginTop: 2,
-                    },
-                  ]}
-                />
-              )}
-
-              {/* If Up arrow, dot is at bottom */}
-              {dir === DIRECTIONS.UP && (
-                <View
-                  style={[
-                    styles.characterDot,
-                    {
-                      width: dotSize,
-                      height: dotSize,
-                      borderRadius: dotSize / 2,
-                      marginTop: 2,
-                    },
-                  ]}
-                />
-              )}
             </View>
           </LinearGradient>
         </Animated.View>
@@ -335,13 +275,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  disabled: {
+    opacity: 0.75,
+  },
   bevelUnderlay: {
     position: 'absolute',
-    top: 4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.6,
-    shadowRadius: 5,
-    elevation: 6,
+    top: 3.5,
+    shadowOffset: { width: 0, height: 3.5 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
   },
   tileFaceWrapper: {
     position: 'relative',
@@ -351,41 +294,28 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: 'rgba(255, 255, 255, 0.45)',
     position: 'relative',
     overflow: 'hidden',
   },
   topSpecularSheen: {
     position: 'absolute',
-    top: 2,
-    left: 4,
-    right: 4,
-    height: '42%',
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    top: 1.5,
+    left: 3,
+    right: 3,
+    height: '38%',
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
   },
-  arrowGroup: {
+  arrowGraphicContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
   },
-  arrowRow: {
-    flexDirection: 'row',
-  },
-  arrowCol: {
-    flexDirection: 'column',
-  },
-  characterDot: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: 'rgba(0, 0, 0, 0.4)',
-    shadowOffset: { width: 0, height: 1.5 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  icon3dShadow: {
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+  trailContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
 });

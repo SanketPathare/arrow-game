@@ -6,9 +6,9 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { soundManager } from '../utils/sound.js';
+import { SvgStar, SvgLock } from './SvgIcons.js';
 
 export const LevelCard = React.memo(function LevelCard({
   levelNumber,
@@ -61,6 +61,10 @@ export const LevelCard = React.memo(function LevelCard({
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
+        accessibilityRole="button"
+        accessibilityLabel={isUnlocked
+          ? `Level ${levelNumber}, ${boardSize} by ${boardSize}${isCompleted ? `, completed with ${stars} stars` : ''}`
+          : `Level ${levelNumber}, locked`}
         style={[
           styles.card,
           {
@@ -101,20 +105,20 @@ export const LevelCard = React.memo(function LevelCard({
             {/* Stars row */}
             <View style={styles.starsRow}>
               {[1, 2, 3].map((starIdx) => (
-                <Ionicons
-                  key={starIdx}
-                  name="star"
-                  size={13}
-                  color={stars >= starIdx ? '#FFB703' : theme.starEmpty}
-                  style={styles.starIcon}
-                />
+                <View key={starIdx} style={styles.starIcon}>
+                  <SvgStar
+                    size={13}
+                    empty={stars < starIdx}
+                    color="#FFD13B"
+                  />
+                </View>
               ))}
             </View>
           </>
         ) : (
           <View style={styles.lockedContent}>
             <View style={styles.lockCircle}>
-              <Ionicons name="lock-closed" size={18} color={theme.textDim} />
+              <SvgLock size={16} color={theme.textDim} />
             </View>
             <Text style={[styles.lockedText, { color: theme.textDim }]}>
               {levelNumber}
@@ -129,9 +133,10 @@ export const LevelCard = React.memo(function LevelCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    margin: 6,
+    margin: 4,
     aspectRatio: 0.95,
-    maxWidth: 96,
+    maxWidth: 120,
+    minHeight: 68,
   },
   lockedContainer: {
     opacity: 0.45,

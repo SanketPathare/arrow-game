@@ -4,15 +4,14 @@ import {
   View,
   Text,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThreeDModalPlaque } from './ThreeDModalPlaque.js';
 import { ThreeDButton } from './ThreeDButton.js';
 import { ThreeDToggle } from './ThreeDToggle.js';
+import { SvgSound, SvgHaptic } from './SvgIcons.js';
 
 /**
- * 3D Cartoon Pause Popup Plaque matching Reference Images 1 & 2.
- * Features 3D Pause crest, carved wooden tray toggles, and glossy 3D buttons.
+ * Pause menu with quick feedback controls and game actions.
  */
 export function PauseModal({
   visible,
@@ -31,7 +30,7 @@ export function PauseModal({
       onClose={onResume}
       crestType="pause"
       title="GAME PAUSED"
-      subtitle="Strategic operation suspended"
+      subtitle="Take a breath. Your board is waiting."
       maxWidth={360}
       showClose={false}
     >
@@ -45,12 +44,12 @@ export function PauseModal({
               colors={['#38D9F8', '#0FB7E8', '#0288D1']}
               style={styles.iconBadge}
             >
-              <Ionicons name="volume-high" size={18} color="#FFFFFF" />
+              <SvgSound size={18} color="#FFFFFF" muted={!soundEnabled} />
             </LinearGradient>
 
             <View style={styles.labelCol}>
               <Text style={styles.rowTitle}>Sound Effects</Text>
-              <Text style={styles.rowSubtitle}>Audio taps & victory chimes</Text>
+              <Text style={styles.rowSubtitle}>Move, blocked, and victory cues</Text>
             </View>
           </View>
 
@@ -72,12 +71,12 @@ export function PauseModal({
               colors={['#FFD13B', '#FFA800', '#F57C00']}
               style={styles.iconBadge}
             >
-              <Ionicons name="hardware-chip" size={18} color="#FFFFFF" />
+              <SvgHaptic size={18} color="#FFFFFF" enabled={hapticsEnabled} />
             </LinearGradient>
 
             <View style={styles.labelCol}>
-              <Text style={styles.rowTitle}>Haptic Tactile</Text>
-              <Text style={styles.rowSubtitle}>Physical bump feedback</Text>
+              <Text style={styles.rowTitle}>Haptic feedback</Text>
+              <Text style={styles.rowSubtitle}>A light response to each move</Text>
             </View>
           </View>
 
@@ -93,7 +92,7 @@ export function PauseModal({
       <View style={styles.actionStack}>
         {/* Hero Button: Resume Game */}
         <ThreeDButton
-          title="RESUME GAME"
+          title="RESUME"
           icon="play"
           iconSize={22}
           colorScheme="cyan"
@@ -142,10 +141,10 @@ export function PauseModal({
 
 const styles = StyleSheet.create({
   settingsTray: {
-    backgroundColor: 'rgba(12, 6, 2, 0.65)',
+    backgroundColor: 'rgba(2, 6, 23, 0.58)',
     borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.16)',
     paddingHorizontal: 14,
     paddingVertical: 10,
     marginBottom: 14,
@@ -183,18 +182,18 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#FFF2C6',
+    color: '#F8FAFC',
     letterSpacing: 0.3,
   },
   rowSubtitle: {
     fontSize: 10.5,
     fontWeight: '600',
-    color: '#C4A58D',
+    color: '#94A3B8',
     marginTop: 1,
   },
   trayDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
+    backgroundColor: 'rgba(148, 163, 184, 0.16)',
     marginVertical: 4,
   },
   actionStack: {
