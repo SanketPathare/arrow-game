@@ -8,6 +8,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { DIRECTIONS, DIRECTION_CONFIG } from '../utils/constants.js';
 import { SvgArrowGraphic, SvgFlightTrail } from './SvgIcons.js';
+import { getZoneById } from '../utils/zones.js';
 
 export const Arrow = React.memo(function Arrow({
   arrow,
@@ -18,6 +19,7 @@ export const Arrow = React.memo(function Arrow({
   isHinted,
   isExiting,
   isResolving = false,
+  zone = 1,
   onPress,
 }) {
   const { dir, id } = arrow;
@@ -131,10 +133,11 @@ export const Arrow = React.memo(function Arrow({
   };
 
   // Determine state for 2D styling
+  const zoneConfig = getZoneById(zone);
   let arrowState = 'normal';
-  let faceGradient = ['#38BDF8', '#0284C7', '#0369A1'];
-  let bevelColor = '#075985';
-  let shadowColor = '#082F49';
+  let faceGradient = zoneConfig.tileGradient;
+  let bevelColor = zoneConfig.tileBevel;
+  let shadowColor = zoneConfig.tileShadow;
 
   if (isBlocked) {
     arrowState = 'blocked';
@@ -253,6 +256,7 @@ export const Arrow = React.memo(function Arrow({
                 size={graphicSize}
                 dir={dir}
                 state={arrowState}
+                zone={zone}
               />
             </View>
           </LinearGradient>

@@ -13,6 +13,7 @@ import { GameStatsHud } from '../components/GameStatsHud.js';
 import { GameBoard } from '../components/GameBoard.js';
 import { PauseModal } from '../components/PauseModal.js';
 import { LevelCompleteModal } from '../components/LevelCompleteModal.js';
+import { getZoneByLevel } from '../utils/zones.js';
 
 export function GameScreen({
   game,
@@ -68,11 +69,12 @@ export function GameScreen({
     return <View style={styles.emptyContainer} />;
   }
 
+  const zoneConfig = getZoneByLevel(levelNumber);
   const remainingCount = activeArrows.length;
   const totalCount = levelData.arrowCount;
 
   return (
-    <GameBackground type="game" theme={theme}>
+    <GameBackground type="game" zone={zoneConfig.id} theme={theme}>
       <View style={styles.container}>
         {/* Top Header Section (Matching Reference Image 2) */}
         <View style={styles.header}>
@@ -135,6 +137,7 @@ export function GameScreen({
             blockedArrowId={blockedArrowId}
             blockingArrowId={blockingArrowId}
             hintArrowId={hintArrowId}
+            zone={zoneConfig.id}
             onArrowPress={handleArrowPress}
             theme={theme}
           />

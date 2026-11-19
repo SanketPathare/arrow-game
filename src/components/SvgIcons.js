@@ -11,13 +11,14 @@ import Svg, {
 } from 'react-native-svg';
 
 /**
- * 2D Graphical Arrow for puzzle gameplay and emblems.
- * Features aerodynamic chevron facets, glowing energy core, and multi-tone SVG styling.
+ * 3D Aerodynamic Graphical Arrow for puzzle gameplay and emblems.
+ * Features faceted supersonic wings, glowing energy core, zone-adaptive palettes, and multi-tone SVG styling.
  */
 export function SvgArrowGraphic({
   size = 48,
   dir = 'UP', // 'UP' | 'RIGHT' | 'DOWN' | 'LEFT'
   state = 'normal', // 'normal' | 'blocked' | 'blocking' | 'hinted'
+  zone = 1,
 }) {
   const rotationMap = {
     UP: 0,
@@ -27,19 +28,70 @@ export function SvgArrowGraphic({
   };
   const rotation = rotationMap[dir] || 0;
 
+  // Zone-specific normal palettes (changes every 10 levels)
+  const zoneNormalPalettes = {
+    1: {
+      gradStart: '#6EE7B7',
+      gradMid: '#10B981',
+      gradEnd: '#047857',
+      leftFacet: 'rgba(255, 255, 255, 0.45)',
+      rightFacet: 'rgba(2, 44, 34, 0.45)',
+      core: '#ECFDF5',
+      coreGlow: 'rgba(110, 231, 183, 0.85)',
+      border: '#065F46',
+      dot: '#A7F3D0',
+    },
+    2: {
+      gradStart: '#FDE68A',
+      gradMid: '#F59E0B',
+      gradEnd: '#B45309',
+      leftFacet: 'rgba(255, 255, 255, 0.45)',
+      rightFacet: 'rgba(69, 26, 3, 0.45)',
+      core: '#FFFBEB',
+      coreGlow: 'rgba(253, 230, 138, 0.85)',
+      border: '#92400E',
+      dot: '#FEF08A',
+    },
+    3: {
+      gradStart: '#E9D5FF',
+      gradMid: '#A855F7',
+      gradEnd: '#6B21A8',
+      leftFacet: 'rgba(255, 255, 255, 0.45)',
+      rightFacet: 'rgba(59, 7, 100, 0.45)',
+      core: '#FAF5FF',
+      coreGlow: 'rgba(233, 213, 255, 0.85)',
+      border: '#6B21A8',
+      dot: '#F3E8FF',
+    },
+    4: {
+      gradStart: '#BAE6FD',
+      gradMid: '#0EA5E9',
+      gradEnd: '#0369A1',
+      leftFacet: 'rgba(255, 255, 255, 0.45)',
+      rightFacet: 'rgba(8, 47, 73, 0.45)',
+      core: '#F0F9FF',
+      coreGlow: 'rgba(186, 230, 253, 0.85)',
+      border: '#075985',
+      dot: '#7DD3FC',
+    },
+    5: {
+      gradStart: '#FECDD3',
+      gradMid: '#F43F5E',
+      gradEnd: '#9F1239',
+      leftFacet: 'rgba(255, 255, 255, 0.45)',
+      rightFacet: 'rgba(76, 5, 25, 0.45)',
+      core: '#FFF1F2',
+      coreGlow: 'rgba(254, 205, 211, 0.85)',
+      border: '#9F1239',
+      dot: '#FDA4AF',
+    },
+  };
+
+  const currentZoneNormal = zoneNormalPalettes[zone] || zoneNormalPalettes[1];
+
   // State-specific color palettes
   const colorMap = {
-    normal: {
-      gradStart: '#4FACFE',
-      gradMid: '#00F2FE',
-      gradEnd: '#0072FF',
-      leftFacet: 'rgba(255, 255, 255, 0.4)',
-      rightFacet: 'rgba(0, 40, 100, 0.35)',
-      core: '#E0F7FF',
-      coreGlow: 'rgba(0, 242, 254, 0.7)',
-      border: '#005BBB',
-      dot: '#7FE7FF',
-    },
+    normal: currentZoneNormal,
     blocked: {
       gradStart: '#FF4E50',
       gradMid: '#FF0844',
@@ -47,7 +99,7 @@ export function SvgArrowGraphic({
       leftFacet: 'rgba(255, 200, 200, 0.45)',
       rightFacet: 'rgba(60, 0, 10, 0.45)',
       core: '#FFF0F2',
-      coreGlow: 'rgba(255, 8, 68, 0.8)',
+      coreGlow: 'rgba(255, 8, 68, 0.85)',
       border: '#6B0014',
       dot: '#FFA3B0',
     },
@@ -75,9 +127,9 @@ export function SvgArrowGraphic({
     },
   };
 
-  const c = colorMap[state] || colorMap.normal;
-  const gradId = `arrow_grad_${state}`;
-  const coreGlowId = `arrow_glow_${state}`;
+  const c = colorMap[state] || currentZoneNormal;
+  const gradId = `arrow_grad_${state}_z${zone}`;
+  const coreGlowId = `arrow_glow_${state}_z${zone}`;
 
   return (
     <Svg
@@ -91,20 +143,20 @@ export function SvgArrowGraphic({
       <Defs>
         <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0%" stopColor={c.gradStart} />
-          <Stop offset="50%" stopColor={c.gradMid} />
+          <Stop offset="45%" stopColor={c.gradMid} />
           <Stop offset="100%" stopColor={c.gradEnd} />
         </LinearGradient>
-        <RadialGradient id={coreGlowId} cx="50%" cy="40%" r="50%">
+        <RadialGradient id={coreGlowId} cx="50%" cy="38%" r="48%">
           <Stop offset="0%" stopColor={c.core} stopOpacity="1" />
-          <Stop offset="60%" stopColor={c.coreGlow} stopOpacity="0.8" />
+          <Stop offset="55%" stopColor={c.coreGlow} stopOpacity="0.85" />
           <Stop offset="100%" stopColor={c.gradMid} stopOpacity="0" />
         </RadialGradient>
       </Defs>
 
-      {/* Aerodynamic 2D Arrow Body */}
-      {/* Outer beveled silhouette */}
+      {/* Aerodynamic 3D Supersonic Arrow Body */}
+      {/* Outer beveled silhouette with swept wing geometry */}
       <Path
-        d="M 50,12 L 86,48 L 68,48 L 68,82 L 32,82 L 32,48 L 14,48 Z"
+        d="M 50,10 L 86,44 L 66,46 L 64,80 L 50,75 L 36,80 L 34,46 L 14,44 Z"
         fill={`url(#${gradId})`}
         stroke={c.border}
         strokeWidth="3.5"
@@ -112,45 +164,59 @@ export function SvgArrowGraphic({
         strokeLinecap="round"
       />
 
-      {/* Left Specular Facet (Highlights upper-left edge) */}
+      {/* Left Specular Facet (Highlights upper-left swept edge) */}
       <Path
-        d="M 50,14 L 50,80 L 34,80 L 34,48 L 17,48 Z"
+        d="M 50,12 L 50,75 L 36,80 L 34,46 L 16,44 Z"
         fill={c.leftFacet}
       />
 
-      {/* Right Shadow Facet (Deepens bottom-right edge) */}
+      {/* Right Shadow Facet (Deepens bottom-right edge & wing) */}
       <Path
-        d="M 50,14 L 83,48 L 66,48 L 66,80 L 50,80 Z"
+        d="M 50,12 L 84,44 L 66,46 L 64,80 L 50,75 Z"
         fill={c.rightFacet}
       />
 
-      {/* High-Tech Central Energy Core Spine */}
+      {/* High-Tech Central Energy Core Spine Ridge */}
       <Path
-        d="M 50,22 L 50,74"
+        d="M 50,18 L 50,72"
         stroke={c.core}
-        strokeWidth="3"
+        strokeWidth="3.2"
         strokeLinecap="round"
       />
 
-      {/* Glowing Energy Node in Head */}
+      {/* Swept Wing Leading Edge Highlights */}
+      <Path
+        d="M 48,14 L 18,43"
+        stroke="rgba(255, 255, 255, 0.45)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <Path
+        d="M 52,14 L 82,43"
+        stroke="rgba(255, 255, 255, 0.25)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+
+      {/* Glowing Energy Node in Aerodynamic Tip */}
       <Circle
         cx="50"
-        cy="34"
-        r="5"
+        cy="32"
+        r="5.5"
         fill={`url(#${coreGlowId})`}
       />
       <Circle
         cx="50"
-        cy="34"
-        r="2.5"
+        cy="32"
+        r="2.8"
         fill="#FFFFFF"
       />
 
-      {/* Tail Power Dot */}
+      {/* Tail Booster Drive Dot */}
       <Circle
         cx="50"
-        cy="72"
-        r="4"
+        cy="68"
+        r="3.8"
         fill={c.dot}
         stroke={c.border}
         strokeWidth="1.5"

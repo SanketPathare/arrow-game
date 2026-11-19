@@ -16,6 +16,7 @@ export const GameBoard = React.memo(function GameBoard({
   blockedArrowId = null,
   blockingArrowId = null,
   hintArrowId = null,
+  zone = 1,
   onArrowPress,
   theme,
 }) {
@@ -229,6 +230,7 @@ export const GameBoard = React.memo(function GameBoard({
                   isHinted={isHinted}
                   isExiting={isExiting}
                   isResolving={isResolving}
+                  zone={zone}
                   onPress={onArrowPress}
                 />
               </View>
