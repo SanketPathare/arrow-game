@@ -27,7 +27,10 @@ export function ThreeDModalPlaque({
   showClose = false,
 }) {
   const { width, height } = useWindowDimensions();
-  const effectiveMaxWidth = Math.min(width - 32, maxWidth);
+  const isNarrow = width < 360;
+  const isShort = height < 700;
+  const effectiveMaxWidth = Math.min(width - (isNarrow ? 16 : 32), maxWidth);
+  const effectiveMaxHeight = Math.floor(height * (isShort ? 0.88 : 0.82));
 
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -88,7 +91,7 @@ export function ThreeDModalPlaque({
               colors={['rgba(15, 23, 42, 0.96)', 'rgba(7, 13, 26, 0.98)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={[styles.innerInlay, { maxHeight: Math.floor(height * 0.8) }]}
+              style={[styles.innerInlay, { maxHeight: effectiveMaxHeight }]}
             >
               <View style={styles.innerGrooveBorder} />
 

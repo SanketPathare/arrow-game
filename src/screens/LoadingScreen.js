@@ -8,13 +8,12 @@ import {
   StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDText } from '../components/ThreeDText.js';
 
 export function LoadingScreen({ onFinish, theme }) {
   // 1 = Minimalist LayerNLooms Studio (white background)
-  // 2 = 3D App Theme Loading (Arrow Escape, Starting, 3D Spinner, 3D Loading Bar)
+  // 2 = 3D App Theme Loading (Arrow Escape & 3D Progress Bar)
   const [frame, setFrame] = useState(1);
 
   // Animations for Frame 1
@@ -22,9 +21,7 @@ export function LoadingScreen({ onFinish, theme }) {
 
   // Animations for Frame 2
   const frame2Opacity = useRef(new Animated.Value(0)).current;
-  const spinnerRotate = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   // Frame 1: Clean White LayerNLooms Studio
   useEffect(() => {
@@ -62,26 +59,6 @@ export function LoadingScreen({ onFinish, theme }) {
       useNativeDriver: true,
     }).start();
 
-    // Pulse loop for the Starting dot
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.3, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 0.8, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    pulseLoop.start();
-
-    // Smooth continuous spinner rotation
-    const spinLoop = Animated.loop(
-      Animated.timing(spinnerRotate, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    );
-    spinLoop.start();
-
     // 5-second loading progression matching app theme
     Animated.timing(progressAnim, {
       toValue: 1,
@@ -95,23 +72,11 @@ export function LoadingScreen({ onFinish, theme }) {
           duration: 300,
           useNativeDriver: true,
         }).start(() => {
-          spinLoop.stop();
-          pulseLoop.stop();
           if (onFinish) onFinish();
         });
       }
     });
-
-    return () => {
-      spinLoop.stop();
-      pulseLoop.stop();
-    };
-  }, [frame, frame2Opacity, spinnerRotate, progressAnim, pulseAnim, onFinish]);
-
-  const spin = spinnerRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  }, [frame, frame2Opacity, progressAnim, onFinish]);
 
   // ----------------------------------------------------
   // Frame 1: Clean, White Background with LayerNLooms Studio
@@ -146,75 +111,12 @@ export function LoadingScreen({ onFinish, theme }) {
           <View style={styles.titleWrapper}>
             <ThreeDText
               text="Arrow Escape"
-              size={34}
+              size={36}
               color="#FFE8A3"
               depthColor="#C77700"
               depth={5}
               strokeColor="#6E3D00"
             />
-          </View>
-
-          {/* 3D Tactile 'Starting' Indicator Pill */}
-          <View style={styles.startingPillWrapper}>
-            <View style={styles.startingPillShadow} />
-            <LinearGradient
-              colors={['#1E293B', '#111B2E', '#0B1222']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.startingPillFace}
-            >
-              <View style={styles.pillTopSheen} />
-              <Animated.View style={[styles.pulseDot, { transform: [{ scale: pulseAnim }] }]} />
-              <Text style={styles.startingText}>Starting</Text>
-            </LinearGradient>
-          </View>
-
-          {/* 3D Glowing Circular Spinner */}
-          <View style={styles.spinnerContainer}>
-            <Animated.View style={{ transform: [{ rotate: spin }] }}>
-              <Svg width={46} height={46} viewBox="0 0 46 46">
-                <Defs>
-                  <SvgLinearGradient id="spinnerGrad" x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0%" stopColor="#00F2FE" />
-                    <Stop offset="50%" stopColor="#38BDF8" />
-                    <Stop offset="100%" stopColor="#0284C7" />
-                  </SvgLinearGradient>
-                </Defs>
-
-                {/* Recessed socket well ring */}
-                <Circle
-                  cx="23"
-                  cy="23"
-                  r="18"
-                  stroke="#080E1C"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <Circle
-                  cx="23"
-                  cy="23"
-                  r="18"
-                  stroke="rgba(56, 189, 248, 0.14)"
-                  strokeWidth="3.5"
-                  fill="none"
-                />
-
-                {/* Glowing cyan active rotation arc */}
-                <Circle
-                  cx="23"
-                  cy="23"
-                  r="18"
-                  stroke="url(#spinnerGrad)"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  strokeDasharray="34 80"
-                  fill="none"
-                />
-              </Svg>
-            </Animated.View>
-
-            {/* Tactile Loading Text */}
-            <Text style={styles.loadingText}>Loading</Text>
           </View>
 
           {/* 3D Chunky Beveled Loading Progress Bar */}
@@ -284,86 +186,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   titleWrapper: {
-    marginBottom: 16,
+    marginBottom: 28,
     alignItems: 'center',
-  },
-
-  // 3D Starting Pill
-  startingPillWrapper: {
-    position: 'relative',
-    marginBottom: 44,
-  },
-  startingPillShadow: {
-    position: 'absolute',
-    top: 3,
-    left: 0,
-    right: 0,
-    bottom: -3,
-    borderRadius: 20,
-    backgroundColor: '#020617',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  startingPillFace: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(56, 189, 248, 0.4)',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  pillTopSheen: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '42%',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
-  pulseDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#00F2FE',
-    marginRight: 8,
-    shadowColor: '#00F2FE',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.9,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  startingText: {
-    color: '#F8FAFC',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-  },
-
-  // 3D Spinner & Loading text
-  spinnerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 36,
-  },
-  loadingText: {
-    color: '#94A3B8',
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-    marginTop: 16,
-    textTransform: 'uppercase',
   },
 
   // 3D Chunky Loading Progress Bar
   progressBox: {
     position: 'relative',
-    height: 14,
+    height: 20,
     width: '100%',
     maxWidth: 260,
   },

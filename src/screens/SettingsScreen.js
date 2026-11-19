@@ -5,6 +5,7 @@ import {
   Text,
   Switch,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
@@ -19,6 +20,8 @@ export function SettingsScreen({
   onBack,
   theme,
 }) {
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 360;
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetError, setResetError] = useState('');
 
@@ -66,7 +69,7 @@ export function SettingsScreen({
 
         <ScrollView
           style={styles.scrollWrapper}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, isNarrow && { paddingHorizontal: 12 }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Audio & Feedback Section */}
@@ -77,7 +80,7 @@ export function SettingsScreen({
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 254, 0.16)' }]}>
                   <SvgSound size={20} color="#00F2FE" muted={!settings.soundEnabled} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>Sound Effects</Text>
                   <Text style={styles.rowSubtitle}>Sound cues for taps, moves, and wins</Text>
                 </View>
@@ -97,7 +100,7 @@ export function SettingsScreen({
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 209, 59, 0.16)' }]}>
                   <SvgHaptic size={20} color="#FFD13B" enabled={settings.hapticsEnabled} />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>Haptic feedback</Text>
                   <Text style={styles.rowSubtitle}>Vibrate on escape or blocked collision</Text>
                 </View>
@@ -123,7 +126,7 @@ export function SettingsScreen({
                     color={settings.darkMode ? '#818CF8' : '#FFD13B'}
                   />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>Dark theme</Text>
                   <Text style={styles.rowSubtitle}>Choose a moonlit or daylight palette</Text>
                 </View>
@@ -145,7 +148,7 @@ export function SettingsScreen({
                 <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 42, 109, 0.16)' }]}>
                   <SvgTrash size={20} color="#FF2A6D" />
                 </View>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.rowTitle}>Reset Progress</Text>
                   <Text style={styles.rowSubtitle}>Erase campaign stars and unlocked levels</Text>
                 </View>

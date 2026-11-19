@@ -23,11 +23,16 @@ export const GameBoard = React.memo(function GameBoard({
   const { width, height } = useWindowDimensions();
 
   // Responsive board sizing: fits comfortably on small, medium, and large screens (phones, tablets, web)
-  // Ensure the board slab (which adds 20-22px border & shadow) never exceeds viewport bounds minus safe margins
-  const horizontalBound = Math.min(width - 36, 520);
-  const verticalBound = Math.min(height * 0.48, 520);
+  // Ensure the board slab (which adds 20px padding + borders) never exceeds viewport bounds minus safe UI areas
+  const isNarrow = width < 360;
+  const isShort = height < 700;
+  const isLandscape = width > height;
+
+  const horizontalBound = Math.min(width - (isNarrow ? 24 : 36), 520);
+  const reservedHeight = isLandscape ? 120 : isShort ? 210 : 255;
+  const verticalBound = Math.min(Math.max(160, height - reservedHeight), 520);
   const maxBoardDim = Math.max(160, Math.min(horizontalBound, verticalBound));
-  const cellSize = Math.floor(maxBoardDim / boardSize);
+  const cellSize = Math.max(28, Math.floor((maxBoardDim - 20) / boardSize));
   const boardDimension = cellSize * boardSize;
 
   // Effects manager for 2D particles, shockwaves, and animations
@@ -95,7 +100,7 @@ export const GameBoard = React.memo(function GameBoard({
   const isResolving = exitingArrowIds.size > 0;
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, isShort && { marginVertical: 3 }]}>
       {/* 2D Slab Drop Shadow */}
       <View
         style={[

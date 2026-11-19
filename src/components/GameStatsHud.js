@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet, View, Text, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatTime } from '../engine/puzzleEngine.js';
 import { SvgFlash, SvgTimer, SvgTarget } from './SvgIcons.js';
@@ -10,8 +10,13 @@ export function GameStatsHud({
   remaining = 6,
   total = 6,
 }) {
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 360;
+  const iconSize = isNarrow ? 15 : 18;
+  const circleSize = isNarrow ? 26 : 32;
+
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, isNarrow && { paddingHorizontal: 8, marginVertical: 4 }]}>
       <View style={styles.shadowBase} />
 
       <LinearGradient
@@ -22,15 +27,37 @@ export function GameStatsHud({
       >
         <View style={styles.cardSheen} />
 
-        <View style={styles.statsContent}>
+        <View style={[styles.statsContent, isNarrow && { paddingVertical: 6, paddingHorizontal: 4 }]}>
           {/* Moves */}
           <View style={styles.statItem}>
-            <View style={styles.iconCircleBlue}>
-              <SvgFlash size={18} color="#00F2FE" />
+            <View
+              style={[
+                styles.iconCircleBlue,
+                {
+                  width: circleSize,
+                  height: circleSize,
+                  borderRadius: circleSize / 2,
+                  marginRight: isNarrow ? 5 : 8,
+                },
+              ]}
+            >
+              <SvgFlash size={iconSize} color="#00F2FE" />
             </View>
             <View style={styles.statTextGroup}>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statValue}>{moves}</Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statLabel}>MOVES</Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statValue, isNarrow && { fontSize: 14 }]}
+              >
+                {moves}
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statLabel, isNarrow && { fontSize: 8 }]}
+              >
+                MOVES
+              </Text>
             </View>
           </View>
 
@@ -38,12 +65,34 @@ export function GameStatsHud({
 
           {/* Time */}
           <View style={styles.statItem}>
-            <View style={styles.iconCircleYellow}>
-              <SvgTimer size={18} color="#FFD13B" />
+            <View
+              style={[
+                styles.iconCircleYellow,
+                {
+                  width: circleSize,
+                  height: circleSize,
+                  borderRadius: circleSize / 2,
+                  marginRight: isNarrow ? 5 : 8,
+                },
+              ]}
+            >
+              <SvgTimer size={iconSize} color="#FFD13B" />
             </View>
             <View style={styles.statTextGroup}>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statValue}>{formatTime(timer)}</Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statLabel}>TIME</Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statValue, isNarrow && { fontSize: 14 }]}
+              >
+                {formatTime(timer)}
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statLabel, isNarrow && { fontSize: 8 }]}
+              >
+                TIME
+              </Text>
             </View>
           </View>
 
@@ -51,12 +100,37 @@ export function GameStatsHud({
 
           {/* Remaining */}
           <View style={styles.statItem}>
-            <View style={styles.iconCircleGreen}>
-              <SvgTarget size={18} color="#06D6A0" />
+            <View
+              style={[
+                styles.iconCircleGreen,
+                {
+                  width: circleSize,
+                  height: circleSize,
+                  borderRadius: circleSize / 2,
+                  marginRight: isNarrow ? 5 : 8,
+                },
+              ]}
+            >
+              <SvgTarget size={iconSize} color="#06D6A0" />
             </View>
             <View style={styles.statTextGroup}>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statValue}>{remaining} <Text style={{ fontSize: 11, color: '#94A3B8' }}>/ {total}</Text></Text>
-              <Text numberOfLines={1} adjustsFontSizeToFit style={styles.statLabel}>REMAINING</Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statValue, isNarrow && { fontSize: 14 }]}
+              >
+                {remaining}{' '}
+                <Text style={{ fontSize: isNarrow ? 9.5 : 11, color: '#94A3B8' }}>
+                  / {total}
+                </Text>
+              </Text>
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statLabel, isNarrow && { fontSize: 8 }]}
+              >
+                REMAINING
+              </Text>
             </View>
           </View>
         </View>

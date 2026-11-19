@@ -125,8 +125,10 @@ export function HomeScreen({
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [giftClaimedDate, setGiftClaimedDate] = useState(null);
 
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isNarrow = width < 360;
+  const isShort = height < 700;
+  const isTablet = width >= 768;
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
   const isDailyCompletedToday = dailyStats?.lastPlayedDate === todayStr;
@@ -202,7 +204,11 @@ export function HomeScreen({
     <GameBackground type="home" theme={theme}>
       <ScrollView
         style={styles.scrollWrapper}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && { maxWidth: 540 },
+          isShort && { paddingBottom: 16, paddingTop: 2 },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
@@ -211,7 +217,7 @@ export function HomeScreen({
           {/* Help Button */}
           <ThreeDButton
             icon="help"
-            iconSize={24}
+            iconSize={isNarrow ? 20 : 24}
             colorScheme="circle-blue"
             size="circle"
             onPress={() => setShowHowToPlay(true)}
@@ -220,7 +226,7 @@ export function HomeScreen({
           {/* Player Rank & Star Badge Pill */}
           <Pressable
             onPress={() => setShowAchievements(true)}
-            style={styles.rankPillWrapper}
+            style={[styles.rankPillWrapper, isNarrow && { maxWidth: 140, marginHorizontal: 4 }]}
             accessibilityRole="button"
             accessibilityLabel={`Player Rank: ${rank.title}, ${totalStars} stars`}
           >
@@ -251,16 +257,16 @@ export function HomeScreen({
           <View style={styles.rightCluster}>
             <ThreeDButton
               icon="trophy"
-              iconSize={22}
+              iconSize={isNarrow ? 18 : 22}
               colorScheme="yellow"
               size="circle"
               onPress={() => setShowAchievements(true)}
               badge={completedAchievementsCount > 0 ? `${completedAchievementsCount}` : null}
             />
-            <View style={{ width: 8 }} />
+            <View style={{ width: isNarrow ? 5 : 8 }} />
             <ThreeDButton
               icon="settings"
-              iconSize={22}
+              iconSize={isNarrow ? 18 : 22}
               colorScheme="circle-orange"
               size="circle"
               onPress={onOpenSettings}
@@ -269,8 +275,8 @@ export function HomeScreen({
         </View>
 
         {/* Central 3D Shield Emblem & Game Title */}
-        <View style={styles.emblemSection}>
-          <ThreeDEmblem size={isNarrow ? 80 : 94} showTitle={true} />
+        <View style={[styles.emblemSection, isShort && { marginVertical: 2 }]}>
+          <ThreeDEmblem size={isNarrow ? 76 : isShort ? 84 : 94} showTitle={true} />
 
           {/* Chapter Zone Tag */}
           <View style={styles.chapterBadge}>

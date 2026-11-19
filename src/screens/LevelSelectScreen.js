@@ -14,12 +14,17 @@ import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { SvgStar, SvgLock } from '../components/SvgIcons.js';
 import { soundManager } from '../utils/sound.js';
-import { ZONES, getZoneById } from '../utils/zones.js';
+import { getZoneById } from '../utils/zones.js';
 
 const NODE_SIZE = 64;
 const LEVEL_STEP_Y = 100;
 const GATEWAY_HEIGHT = 114;
 const GATEWAY_MARGIN = 26;
+
+const DEFAULT_NODE_SIZE = NODE_SIZE;
+const DEFAULT_LEVEL_STEP_Y = LEVEL_STEP_Y;
+const DEFAULT_GATEWAY_HEIGHT = GATEWAY_HEIGHT;
+const DEFAULT_GATEWAY_MARGIN = GATEWAY_MARGIN;
 
 export function LevelSelectScreen({
   unlockedLevel = 1,
@@ -30,6 +35,12 @@ export function LevelSelectScreen({
 }) {
   const { width } = useWindowDimensions();
   const scrollViewRef = useRef(null);
+
+  const isNarrow = width < 360;
+  const nodeSize = isNarrow ? 56 : DEFAULT_NODE_SIZE;
+  const levelStepY = isNarrow ? 90 : DEFAULT_LEVEL_STEP_Y;
+  const gatewayHeight = isNarrow ? 104 : DEFAULT_GATEWAY_HEIGHT;
+  const gatewayMargin = isNarrow ? 20 : DEFAULT_GATEWAY_MARGIN;
 
   // Compute player's active zone
   const activeUserZone = useMemo(() => {
@@ -93,7 +104,10 @@ export function LevelSelectScreen({
   // Road geometry calculation
   const contentWidth = Math.min(width, 680);
   const roadCenterX = contentWidth / 2;
-  const roadAmplitude = Math.min((contentWidth - 120) * 0.38, 95);
+  const roadAmplitude = Math.min(
+    (contentWidth - (isNarrow ? 90 : 120)) * 0.38,
+    isNarrow ? 70 : 95
+  );
 
   // Pre-calculate positions of all gateways and level nodes
   const roadLayout = useMemo(() => {
@@ -108,14 +122,14 @@ export function LevelSelectScreen({
         y: gatewayY,
       });
 
-      currentY += GATEWAY_HEIGHT + GATEWAY_MARGIN;
+      currentY += gatewayHeight + gatewayMargin;
 
       // 10 levels per zone
       for (let i = 1; i <= 10; i++) {
         const levelNum = (z - 1) * 10 + i;
         const xOffset = Math.sin((levelNum - 1) * 0.76) * roadAmplitude;
         const x = roadCenterX + xOffset;
-        const y = currentY + NODE_SIZE / 2;
+        const y = currentY + nodeSize / 2;
 
         levelPositions.push({
           levelNumber: levelNum,
@@ -124,15 +138,15 @@ export function LevelSelectScreen({
           y,
         });
 
-        currentY += LEVEL_STEP_Y;
+        currentY += levelStepY;
       }
 
-      currentY += GATEWAY_MARGIN;
+      currentY += gatewayMargin;
     }
 
     const totalHeight = currentY + 40;
     return { gateways, levelPositions, totalHeight };
-  }, [roadCenterX, roadAmplitude]);
+  }, [roadCenterX, roadAmplitude, gatewayHeight, gatewayMargin, nodeSize, levelStepY]);
 
   // Generate SVG Bezier Road Path segments connecting levels 1 through 50
   const roadPathD = useMemo(() => {
@@ -171,20 +185,6 @@ export function LevelSelectScreen({
     return () => clearTimeout(timer);
   }, [unlockedLevel, roadLayout]);
 
-  // Scroll to a specific zone when tapping the zone tabs
-  const handleJumpToZone = (zoneId) => {
-    soundManager.playClickSound();
-    setSelectedZone(zoneId);
-
-    const gateway = roadLayout.gateways.find((g) => g.zoneId === zoneId);
-    if (gateway && scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({
-        y: Math.max(0, gateway.y - 12),
-        animated: true,
-      });
-    }
-  };
-
   // Detect which zone is in viewport during scrolling to update background art
   const handleScroll = (event) => {
     const scrollY = event.nativeEvent.contentOffset.y;
@@ -204,94 +204,30 @@ export function LevelSelectScreen({
     <GameBackground type="levelSelect" zone={selectedZone} theme={theme}>
       <View style={styles.container}>
         {/* Top Header Bar */}
-        <View style={styles.header}>
+        <View style={[styles.header, isNarrow && { paddingHorizontal: 10, paddingBottom: 4 }]}>
           <ThreeDButton
             icon="arrow-back"
-            iconSize={24}
+            iconSize={isNarrow ? 20 : 24}
             colorScheme="circle-blue"
             size="circle"
             onPress={onBack}
           />
 
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>CHOOSE A LEVEL</Text>
-            <View style={styles.starBadge}>
+            <Text style={[styles.title, isNarrow && { fontSize: 18, letterSpacing: 1 }]}>
+              CHOOSE A LEVEL
+            </Text>
+            <View style={[styles.starBadge, isNarrow && { paddingHorizontal: 9, paddingVertical: 2 }]}>
               <View style={{ marginRight: 4 }}>
-                <SvgStar size={14} color="#FFD13B" />
+                <SvgStar size={isNarrow ? 12 : 14} color="#FFD13B" />
               </View>
-              <Text style={styles.starBadgeText}>
+              <Text style={[styles.starBadgeText, isNarrow && { fontSize: 11 }]}>
                 {totalStars} / 150 <Text style={{ color: '#D4B896' }}>stars</Text>
               </Text>
             </View>
           </View>
 
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Zone Selector Horizontal Chips (Quick-Jump to Zone 1 - 5) */}
-        <View style={styles.zoneTabsContainer}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.zoneTabsScroll}
-          >
-            {ZONES.map((zone) => {
-              const isSelected = selectedZone === zone.id;
-              const isZoneUnlocked = unlockedLevel >= zone.levels[0];
-
-              return (
-                <Pressable
-                  key={zone.id}
-                  onPress={() => handleJumpToZone(zone.id)}
-                  style={[
-                    styles.zoneChip,
-                    isSelected
-                      ? {
-                          backgroundColor: zone.primaryColor,
-                          borderColor: zone.glowColor,
-                          shadowColor: zone.accentColor,
-                          shadowOpacity: 0.8,
-                          shadowRadius: 8,
-                          elevation: 6,
-                        }
-                      : styles.zoneChipInactive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.zoneChipTitle,
-                      { color: isSelected ? '#FFFFFF' : '#A0BEDE' },
-                    ]}
-                  >
-                    {`Z${zone.id}: ${zone.name.split(' ')[0]}`}
-                  </Text>
-                  <View
-                    style={[
-                      styles.zoneChipBadge,
-                      {
-                        backgroundColor: isSelected
-                          ? 'rgba(0, 0, 0, 0.28)'
-                          : 'rgba(255, 255, 255, 0.08)',
-                      },
-                    ]}
-                  >
-                    {!isZoneUnlocked ? (
-                      <SvgLock size={9} color={isSelected ? '#FFFFFF' : '#93B4D8'} />
-                    ) : (
-                      <Text
-                        style={[
-                          styles.zoneChipBadgeText,
-                          { color: isSelected ? '#FFFFFF' : '#93B4D8' },
-                        ]}
-                      >
-                        {`${zone.levels[0]}-${zone.levels[1]}`}
-                      </Text>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+          <View style={[styles.headerSpacer, isNarrow && { width: 40, height: 40 }]} />
         </View>
 
         {/* Winding Road / Saga Map Scroll View */}
@@ -309,8 +245,9 @@ export function LevelSelectScreen({
           {/* Continuous SVG Winding Road Path Layer */}
           <Svg
             style={StyleSheet.absoluteFill}
-            width={contentWidth}
+            width="100%"
             height={roadLayout.totalHeight}
+            viewBox={`0 0 ${contentWidth} ${roadLayout.totalHeight}`}
             pointerEvents="none"
           >
             <Defs>
@@ -326,8 +263,9 @@ export function LevelSelectScreen({
             {/* Base Dark Road Underlay */}
             <Path
               d={roadPathD}
-              stroke="rgba(8, 14, 28, 0.85)"
-              strokeWidth="28"
+              fill="none"
+              stroke="rgba(8, 14, 28, 0.75)"
+              strokeWidth="24"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -335,8 +273,9 @@ export function LevelSelectScreen({
             {/* Glowing Road Surface */}
             <Path
               d={roadPathD}
+              fill="none"
               stroke="url(#roadGlow)"
-              strokeWidth="14"
+              strokeWidth="12"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -344,21 +283,22 @@ export function LevelSelectScreen({
             {/* Dashed Center Stepping Line */}
             <Path
               d={roadPathD}
+              fill="none"
               stroke="#FFFFFF"
               strokeWidth="4"
               strokeDasharray="6, 10"
               strokeLinecap="round"
-              strokeOpacity="0.8"
+              strokeOpacity="0.85"
             />
 
-            {/* Stepping stone waypoint dots along the path */}
+            {/* Stepping stone waypoint rings along the path */}
             {roadLayout.levelPositions.map((pos) => (
               <Circle
                 key={`dot_${pos.levelNumber}`}
                 cx={pos.x}
                 cy={pos.y}
-                r="36"
-                fill="rgba(8, 14, 28, 0.45)"
+                r="34"
+                fill="rgba(255, 255, 255, 0.06)"
               />
             ))}
           </Svg>
@@ -380,6 +320,9 @@ export function LevelSelectScreen({
                   styles.gatewayCard,
                   {
                     top: gw.y,
+                    height: gatewayHeight,
+                    left: isNarrow ? 12 : 20,
+                    right: isNarrow ? 12 : 20,
                     borderColor: zone.borderColor,
                   },
                 ]}
@@ -439,8 +382,10 @@ export function LevelSelectScreen({
                 style={[
                   styles.nodePositioner,
                   {
-                    left: x - NODE_SIZE / 2,
-                    top: y - NODE_SIZE / 2,
+                    left: x - nodeSize / 2,
+                    top: y - nodeSize / 2,
+                    width: nodeSize,
+                    height: nodeSize,
                   },
                 ]}
               >
@@ -450,6 +395,9 @@ export function LevelSelectScreen({
                     style={[
                       styles.currentPulseRing,
                       {
+                        width: nodeSize + (isNarrow ? 18 : 24),
+                        height: nodeSize + (isNarrow ? 18 : 24),
+                        borderRadius: (nodeSize + (isNarrow ? 18 : 24)) / 2,
                         borderColor: zone.accentColor,
                         transform: [{ scale: pulseAnim }],
                       },
@@ -487,6 +435,11 @@ export function LevelSelectScreen({
                   }}
                   style={({ pressed }) => [
                     styles.nodeStone,
+                    {
+                      width: nodeSize,
+                      height: nodeSize,
+                      borderRadius: nodeSize / 2,
+                    },
                     isUnlocked
                       ? {
                           borderColor: isCurrent ? zone.glowColor : zone.borderColor,
@@ -513,11 +466,18 @@ export function LevelSelectScreen({
 
                     {isUnlocked ? (
                       <View style={styles.nodeContent}>
-                        <Text style={styles.nodeNumberText}>{levelNumber}</Text>
+                        <Text
+                          style={[
+                            styles.nodeNumberText,
+                            isNarrow && { fontSize: 18 },
+                          ]}
+                        >
+                          {levelNumber}
+                        </Text>
                       </View>
                     ) : (
                       <View style={styles.nodeLockedContent}>
-                        <SvgLock size={20} color="#94A3B8" />
+                        <SvgLock size={isNarrow ? 17 : 20} color="#94A3B8" />
                         <Text style={styles.nodeLockedText}>{levelNumber}</Text>
                       </View>
                     )}
@@ -590,39 +550,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: '#FFFFFF',
   },
-  zoneTabsContainer: {
-    marginVertical: 6,
-  },
-  zoneTabsScroll: {
-    paddingHorizontal: 16,
-  },
-  zoneChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-    borderWidth: 1.8,
-    marginRight: 8,
-  },
-  zoneChipInactive: {
-    backgroundColor: 'rgba(15, 23, 42, 0.78)',
-    borderColor: '#334155',
-  },
-  zoneChipTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  zoneChipBadge: {
-    marginLeft: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 1.5,
-    borderRadius: 8,
-  },
-  zoneChipBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
   roadScrollView: {
     flex: 1,
     width: '100%',
@@ -635,7 +562,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 20,
     right: 20,
-    height: GATEWAY_HEIGHT,
     borderRadius: 18,
     borderWidth: 2,
     overflow: 'hidden',
@@ -711,17 +637,12 @@ const styles = StyleSheet.create({
   },
   nodePositioner: {
     position: 'absolute',
-    width: NODE_SIZE,
-    height: NODE_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 20,
   },
   currentPulseRing: {
     position: 'absolute',
-    width: NODE_SIZE + 24,
-    height: NODE_SIZE + 24,
-    borderRadius: (NODE_SIZE + 24) / 2,
     borderWidth: 2.5,
   },
   playBanner: {
@@ -745,9 +666,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   nodeStone: {
-    width: NODE_SIZE,
-    height: NODE_SIZE,
-    borderRadius: NODE_SIZE / 2,
     borderWidth: 3,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 4 },
@@ -771,8 +689,8 @@ const styles = StyleSheet.create({
     top: 3,
     left: 8,
     right: 8,
-    height: NODE_SIZE * 0.35,
-    borderRadius: NODE_SIZE / 2,
+    height: '35%',
+    borderRadius: 20,
     backgroundColor: 'rgba(255, 255, 255, 0.28)',
   },
   nodeContent: {

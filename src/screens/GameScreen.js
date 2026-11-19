@@ -46,9 +46,14 @@ export function GameScreen({
     handleNextLevel,
   } = game;
 
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isNarrow = width < 360;
-  const titleSize = isNarrow ? (isDaily ? 16 : 22) : (isDaily ? 19 : 28);
+  const isShort = height < 700;
+  const titleSize = isNarrow
+    ? (isDaily ? 15 : 20)
+    : isShort
+    ? (isDaily ? 17 : 24)
+    : (isDaily ? 19 : 28);
 
   // Handle hardware Android back button
   useEffect(() => {
@@ -75,13 +80,18 @@ export function GameScreen({
 
   return (
     <GameBackground type="game" zone={zoneConfig.id} theme={theme}>
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isShort && { paddingVertical: 2 },
+        ]}
+      >
         {/* Top Header Section (Matching Reference Image 2) */}
-        <View style={styles.header}>
+        <View style={[styles.header, isNarrow && { paddingHorizontal: 10, paddingTop: 2 }]}>
           {/* Circular 3D Back Button */}
           <ThreeDButton
             icon="arrow-back"
-            iconSize={24}
+            iconSize={isNarrow ? 20 : 24}
             colorScheme="circle-blue"
             size="circle"
             onPress={() => {
@@ -113,7 +123,7 @@ export function GameScreen({
           {/* Circular 3D Pause Button */}
           <ThreeDButton
             icon="pause"
-            iconSize={isNarrow ? 20 : 22}
+            iconSize={isNarrow ? 18 : 22}
             colorScheme="circle-blue"
             size="circle"
             onPress={togglePause}
@@ -144,14 +154,20 @@ export function GameScreen({
         </View>
 
         {/* Bottom 3D Action Buttons Deck (Hint & Reset) */}
-        <View style={styles.bottomButtonsRow}>
+        <View
+          style={[
+            styles.bottomButtonsRow,
+            isShort && { paddingBottom: 6 },
+            isNarrow && { paddingHorizontal: 10 },
+          ]}
+        >
           {/* Hint Button (Glossy Warm Yellow/Orange) */}
           <ThreeDButton
             title="Hint"
             icon="bulb"
             iconSize={isNarrow ? 18 : 22}
             colorScheme="yellow"
-            size="md"
+            size={isShort ? 'sm' : 'md'}
             onPress={handleHint}
             style={styles.actionBtn}
           />
@@ -162,7 +178,7 @@ export function GameScreen({
             icon="refresh"
             iconSize={isNarrow ? 18 : 22}
             colorScheme="blue"
-            size="md"
+            size={isShort ? 'sm' : 'md'}
             onPress={handleRestart}
             style={styles.actionBtn}
           />
