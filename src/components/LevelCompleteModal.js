@@ -18,6 +18,10 @@ export function LevelCompleteModal({
   visible,
   levelNumber,
   isDaily = false,
+  isBlitz = false,
+  blitzScore = 0,
+  blitzBoardsCleared = 0,
+  maxCombo = 0,
   stars = 3,
   moves = 0,
   optimalMoves = 0,
@@ -64,12 +68,22 @@ export function LevelCompleteModal({
     }
   }, [visible, stars, star1Anim, star2Anim, star3Anim]);
 
-  const ratingTitle =
-    stars === 3 ? 'PERFECT RUN!' : stars === 2 ? 'WELL PLAYED!' : 'LEVEL COMPLETE';
+  const ratingTitle = isBlitz
+    ? 'TIME EXPIRED!'
+    : stars === 3
+    ? 'PERFECT RUN!'
+    : stars === 2
+    ? 'WELL PLAYED!'
+    : 'LEVEL COMPLETE';
 
-  const ratingSubtitle = isDaily
+  const ratingSubtitle = isBlitz
+    ? `Cleared ${blitzBoardsCleared} boards in 60s`
+    : isDaily
     ? 'Today’s challenge is complete'
     : `You cleared level ${levelNumber}`;
+
+  const rankTier = stars === 3 ? (moves <= optimalMoves ? 'S-RANK' : 'A-RANK') : stars === 2 ? 'A-RANK' : 'B-RANK';
+  const rankColor = rankTier === 'S-RANK' ? '#FFD700' : rankTier === 'A-RANK' ? '#38BDF8' : '#34D399';
 
   return (
     <>
@@ -84,110 +98,187 @@ export function LevelCompleteModal({
         maxWidth={360}
         showClose={false}
       >
-        {/* 3D Animated Stars Stage */}
-        <View style={styles.starsStage}>
-          {/* Star 1 */}
-          <Animated.View style={{ transform: [{ scale: star1Anim }] }}>
-            <ThreeDStar size={42} empty={stars < 1} />
-          </Animated.View>
+        {isBlitz ? (
+          /* Blitz Rush Score Plaque */
+          <View style={styles.blitzScoreStage}>
+            <Text style={styles.blitzScoreLabel}>FINAL BLITZ SCORE</Text>
+            <Text style={styles.blitzScoreValue}>{blitzScore}</Text>
+          </View>
+        ) : (
+          /* 3D Animated Stars Stage */
+          <View style={styles.starsStage}>
+            {/* Star 1 */}
+            <Animated.View style={{ transform: [{ scale: star1Anim }] }}>
+              <ThreeDStar size={42} empty={stars < 1} />
+            </Animated.View>
 
-          {/* Star 2 (Middle - Elevated Hero Star) */}
-          <Animated.View style={[{ transform: [{ scale: star2Anim }], marginTop: -14, marginHorizontal: 12 }]}>
-            <ThreeDStar size={54} empty={stars < 2} />
-          </Animated.View>
+            {/* Star 2 (Middle - Elevated Hero Star) */}
+            <Animated.View style={[{ transform: [{ scale: star2Anim }], marginTop: -14, marginHorizontal: 12 }]}>
+              <ThreeDStar size={54} empty={stars < 2} />
+            </Animated.View>
 
-          {/* Star 3 */}
-          <Animated.View style={{ transform: [{ scale: star3Anim }] }}>
-            <ThreeDStar size={42} empty={stars < 3} />
-          </Animated.View>
-        </View>
+            {/* Star 3 */}
+            <Animated.View style={{ transform: [{ scale: star3Anim }] }}>
+              <ThreeDStar size={42} empty={stars < 3} />
+            </Animated.View>
+          </View>
+        )}
+
+        {/* Rank & Tactical Performance Tag (Campaign) */}
+        {!isBlitz && (
+          <View style={styles.rankBadgeRow}>
+            <View style={[styles.rankBadgePill, { borderColor: rankColor }]}>
+              <Text style={[styles.rankBadgeText, { color: rankColor }]}>{rankTier}</Text>
+            </View>
+            {maxCombo >= 2 && (
+              <View style={styles.comboBadgePill}>
+                <Text style={styles.comboBadgeText}>⚡ MAX COMBO x{maxCombo}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Carved Wooden Stats Plinth Tray */}
         <View style={styles.statsTray}>
-          {/* Col 1: Moves */}
-          <View style={styles.statCol}>
-            <Text style={styles.statLabel}>MOVES</Text>
-            <Text style={[styles.statValue, { color: '#38D9F8' }]}>{moves}</Text>
-            <Text style={styles.statSub}>Par: {optimalMoves || moves}</Text>
-          </View>
+          {isBlitz ? (
+            <>
+              {/* Col 1: Boards Cleared */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>BOARDS</Text>
+                <Text style={[styles.statValue, { color: '#38D9F8' }]}>{blitzBoardsCleared}</Text>
+                <Text style={styles.statSub}>Solved</Text>
+              </View>
 
-          <View style={styles.statDivider} />
+              <View style={styles.statDivider} />
 
-          {/* Col 2: Time */}
-          <View style={styles.statCol}>
-            <Text style={styles.statLabel}>TIME</Text>
-            <Text style={[styles.statValue, { color: '#FFD13B' }]}>{formatTime(time)}</Text>
-            <Text style={styles.statSub}>Elapsed</Text>
-          </View>
+              {/* Col 2: Time */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>TIME</Text>
+                <Text style={[styles.statValue, { color: '#FFD13B' }]}>60s</Text>
+                <Text style={styles.statSub}>Full Run</Text>
+              </View>
 
-          <View style={styles.statDivider} />
+              <View style={styles.statDivider} />
 
-          {/* Col 3: Stars */}
-          <View style={styles.statCol}>
-            <Text style={styles.statLabel}>RATING</Text>
-            <Text style={[styles.statValue, { color: '#FF8A00' }]}>{stars}/3</Text>
-            <Text style={styles.statSub}>Stars</Text>
-          </View>
+              {/* Col 3: Max Combo */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>COMBO</Text>
+                <Text style={[styles.statValue, { color: '#FF8A00' }]}>x{maxCombo || 1}</Text>
+                <Text style={styles.statSub}>Peak</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Col 1: Moves */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>MOVES</Text>
+                <Text style={[styles.statValue, { color: '#38D9F8' }]}>{moves}</Text>
+                <Text style={styles.statSub}>Par: {optimalMoves || moves}</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              {/* Col 2: Time */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>TIME</Text>
+                <Text style={[styles.statValue, { color: '#FFD13B' }]}>{formatTime(time)}</Text>
+                <Text style={styles.statSub}>Elapsed</Text>
+              </View>
+
+              <View style={styles.statDivider} />
+
+              {/* Col 3: Stars */}
+              <View style={styles.statCol}>
+                <Text style={styles.statLabel}>RATING</Text>
+                <Text style={[styles.statValue, { color: '#FF8A00' }]}>{stars}/3</Text>
+                <Text style={styles.statSub}>Stars</Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* 3D Action Buttons Stack */}
         <View style={styles.actionStack}>
-          {/* Hero Button: Next Level (or Vault if completed level 50) */}
-          {hasNextLevel ? (
-            <ThreeDButton
-              title="NEXT LEVEL"
-              icon="play"
-              iconSize={22}
-              colorScheme="cyan"
-              size="lg"
-              onPress={onNextLevel}
-              style={styles.btnSpacing}
-            />
+          {isBlitz ? (
+            <>
+              <ThreeDButton
+                title="PLAY AGAIN"
+                icon="refresh"
+                iconSize={22}
+                colorScheme="cyan"
+                size="lg"
+                onPress={onReplay}
+                style={styles.btnSpacing}
+              />
+              <ThreeDButton
+                title="HOME"
+                icon="home"
+                iconSize={18}
+                colorScheme="blue"
+                size="md"
+                onPress={onHome}
+              />
+            </>
           ) : (
-            <ThreeDButton
-              title="LEVEL VAULT"
-              icon="grid"
-              iconSize={22}
-              colorScheme="cyan"
-              size="lg"
-              onPress={onLevelSelect}
-              style={styles.btnSpacing}
-            />
+            <>
+              {/* Hero Button: Next Level (or Vault if completed level 50) */}
+              {hasNextLevel ? (
+                <ThreeDButton
+                  title="NEXT LEVEL"
+                  icon="play"
+                  iconSize={22}
+                  colorScheme="cyan"
+                  size="lg"
+                  onPress={onNextLevel}
+                  style={styles.btnSpacing}
+                />
+              ) : (
+                <ThreeDButton
+                  title="LEVEL VAULT"
+                  icon="grid"
+                  iconSize={22}
+                  colorScheme="cyan"
+                  size="lg"
+                  onPress={onLevelSelect}
+                  style={styles.btnSpacing}
+                />
+              )}
+
+              {/* Secondary: Replay Stage */}
+              <ThreeDButton
+                title="PLAY AGAIN"
+                icon="refresh"
+                iconSize={20}
+                colorScheme="yellow"
+                size="md"
+                onPress={onReplay}
+                style={styles.btnSpacing}
+              />
+
+              {/* Bottom Row: Level Vault & Home */}
+              <View style={styles.bottomRow}>
+                <ThreeDButton
+                  title="Levels"
+                  icon="grid"
+                  iconSize={18}
+                  colorScheme="blue"
+                  size="md"
+                  onPress={onLevelSelect}
+                  style={{ flex: 1, marginRight: 8 }}
+                />
+
+                <ThreeDButton
+                  title="Home"
+                  icon="home"
+                  iconSize={18}
+                  colorScheme="blue"
+                  size="md"
+                  onPress={onHome}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            </>
           )}
-
-          {/* Secondary: Replay Stage */}
-          <ThreeDButton
-            title="PLAY AGAIN"
-            icon="refresh"
-            iconSize={20}
-            colorScheme="yellow"
-            size="md"
-            onPress={onReplay}
-            style={styles.btnSpacing}
-          />
-
-          {/* Bottom Row: Level Vault & Home */}
-          <View style={styles.bottomRow}>
-            <ThreeDButton
-              title="Levels"
-              icon="grid"
-              iconSize={18}
-              colorScheme="blue"
-              size="md"
-              onPress={onLevelSelect}
-              style={{ flex: 1, marginRight: 8 }}
-            />
-
-            <ThreeDButton
-              title="Home"
-              icon="home"
-              iconSize={18}
-              colorScheme="blue"
-              size="md"
-              onPress={onHome}
-              style={{ flex: 1 }}
-            />
-          </View>
         </View>
       </ThreeDModalPlaque>
     </>
@@ -201,6 +292,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
     marginBottom: 8,
+  },
+  blitzScoreStage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginBottom: 8,
+  },
+  blitzScoreLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#00F2FE',
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  blitzScoreValue: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: '#FFD13B',
+    textShadowColor: 'rgba(255, 209, 59, 0.45)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  rankBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  rankBadgePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    marginHorizontal: 4,
+  },
+  rankBadgeText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  comboBadgePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.5)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    marginHorizontal: 4,
+  },
+  comboBadgeText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: '#FBBF24',
+    letterSpacing: 0.5,
   },
   statsTray: {
     flexDirection: 'row',

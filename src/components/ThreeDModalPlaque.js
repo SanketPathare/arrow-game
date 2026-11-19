@@ -24,13 +24,13 @@ export function ThreeDModalPlaque({
   subtitle = 'Current operations suspended',
   children,
   maxWidth = 360,
-  showClose = false,
+  showClose = true,
 }) {
   const { width, height } = useWindowDimensions();
   const isNarrow = width < 360;
   const isShort = height < 700;
   const effectiveMaxWidth = Math.min(width - (isNarrow ? 16 : 32), maxWidth);
-  const effectiveMaxHeight = Math.floor(height * (isShort ? 0.88 : 0.82));
+  const effectiveMaxHeight = Math.floor(height * (isShort ? 0.86 : 0.80));
 
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -65,6 +65,16 @@ export function ThreeDModalPlaque({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        {/* Backdrop Dismiss Touch Surface */}
+        {onClose && (
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close modal backdrop"
+          />
+        )}
+
         {/* Animated 3D Plaque Container */}
         <Animated.View
           style={[
@@ -96,9 +106,14 @@ export function ThreeDModalPlaque({
               <View style={styles.innerGrooveBorder} />
 
               <ScrollView
-                showsVerticalScrollIndicator={false}
-                bounces={false}
+                style={styles.scrollView}
                 contentContainerStyle={styles.scrollBody}
+                showsVerticalScrollIndicator={true}
+                indicatorStyle="white"
+                bounces={true}
+                nestedScrollEnabled={true}
+                keyboardShouldPersistTaps="handled"
+                overScrollMode="always"
               >
                 <View style={styles.titleSection}>
                   <View style={styles.titleExtrusionContainer}>
@@ -142,10 +157,27 @@ export function ThreeDModalPlaque({
             )}
           </View>
 
-          {/* Optional Close Button */}
-          {showClose && (
-            <Pressable onPress={onClose} style={styles.closeBtn}>
-              <SvgClose size={20} color="#FFFFFF" />
+          {/* Tactile 3D Close Button ('X') */}
+          {showClose && onClose && (
+            <Pressable
+              onPress={onClose}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={({ pressed }) => [
+                styles.closeBtn,
+                pressed && styles.closeBtnPressed,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Close dialog"
+            >
+              <LinearGradient
+                colors={['#F43F5E', '#BE123C']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.closeBtnGradient}
+              >
+                <View style={styles.closeBtnSheen} />
+                <SvgClose size={18} color="#FFFFFF" />
+              </LinearGradient>
             </Pressable>
           )}
         </Animated.View>
@@ -165,8 +197,9 @@ const styles = StyleSheet.create({
   plaqueOuter: {
     width: '100%',
     position: 'relative',
-    marginTop: 24,
-    maxHeight: '94%',
+    marginTop: 20,
+    maxHeight: '92%',
+    flexShrink: 1,
   },
   plaqueShadowBase: {
     position: 'absolute',
@@ -183,12 +216,15 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   woodenFrame: {
+    width: '100%',
     borderRadius: 26,
     borderWidth: 1,
     borderColor: 'rgba(125, 211, 252, 0.3)',
     padding: 8,
     position: 'relative',
     overflow: 'visible',
+    flexShrink: 1,
+    maxHeight: '100%',
   },
   frameTopSheen: {
     position: 'absolute',
@@ -201,13 +237,15 @@ const styles = StyleSheet.create({
   },
   innerInlay: {
     borderRadius: 20,
-    paddingTop: 38,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+    paddingTop: 36,
+    paddingBottom: 12,
+    paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: 'rgba(148, 163, 184, 0.16)',
     position: 'relative',
     overflow: 'hidden',
+    width: '100%',
+    flexShrink: 1,
   },
   innerGrooveBorder: {
     ...StyleSheet.absoluteFillObject,
@@ -284,29 +322,54 @@ const styles = StyleSheet.create({
     marginTop: 3,
     letterSpacing: 0.4,
   },
-  scrollBody: {
+  scrollView: {
+    width: '100%',
     flexGrow: 0,
+    flexShrink: 1,
+  },
+  scrollBody: {
+    flexGrow: 1,
+    paddingBottom: 16,
   },
   contentBody: {
     width: '100%',
   },
   closeBtn: {
     position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E62E5C',
+    top: -10,
+    right: -10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    zIndex: 60,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+    elevation: 10,
+  },
+  closeBtnPressed: {
+    transform: [{ scale: 0.92 }],
+    opacity: 0.9,
+  },
+  closeBtnGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 19,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3,
-    elevation: 6,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  closeBtnSheen: {
+    position: 'absolute',
+    top: 2,
+    left: 4,
+    right: 4,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 8,
   },
 });

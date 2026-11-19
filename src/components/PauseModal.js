@@ -32,7 +32,7 @@ export function PauseModal({
       title="GAME PAUSED"
       subtitle="Take a breath. Your board is waiting."
       maxWidth={360}
-      showClose={false}
+      showClose={true}
     >
       {/* Recessed Settings Inlay Tray */}
       <View style={styles.settingsTray}>

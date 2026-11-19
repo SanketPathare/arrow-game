@@ -2,6 +2,8 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
+  Text,
+  Animated,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +18,7 @@ export const GameBoard = React.memo(function GameBoard({
   blockedArrowId = null,
   blockingArrowId = null,
   hintArrowId = null,
+  combo = 0,
   zone = 1,
   onArrowPress,
   theme,
@@ -38,6 +41,20 @@ export const GameBoard = React.memo(function GameBoard({
   // Effects manager for 2D particles, shockwaves, and animations
   const effectsManagerRef = useRef(new EffectsManager());
   const engineRef = useRef(null);
+  const comboAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate combo banner popup when combo increases
+  useEffect(() => {
+    if (combo >= 2) {
+      comboAnim.setValue(0);
+      Animated.spring(comboAnim, {
+        toValue: 1,
+        speed: 28,
+        bounciness: 14,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [combo, comboAnim]);
 
   // Generate grid background cells
   const gridCells = useMemo(() => {
@@ -101,6 +118,44 @@ export const GameBoard = React.memo(function GameBoard({
 
   return (
     <View style={[styles.outerContainer, isShort && { marginVertical: 3 }]}>
+      {/* Dynamic Floating Combo Streak Banner */}
+      {combo >= 2 && (
+        <Animated.View
+          style={[
+            styles.comboFloater,
+            {
+              transform: [
+                { scale: comboAnim },
+                {
+                  translateY: comboAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [6, -14],
+                  }),
+                },
+              ],
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={
+              combo >= 5
+                ? ['#F43F5E', '#BE123C']
+                : combo >= 3
+                ? ['#F59E0B', '#D97706']
+                : ['#06B6D4', '#0891B2']
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.comboFloaterGradient}
+          >
+            <Text style={styles.comboFloaterText}>
+              {combo >= 5 ? '🔥 ULTRA ' : combo >= 3 ? '⚡ SUPER ' : '✨ '}COMBO x{combo}!
+            </Text>
+          </LinearGradient>
+        </Animated.View>
+      )}
+
       {/* 2D Slab Drop Shadow */}
       <View
         style={[
@@ -342,5 +397,29 @@ const styles = StyleSheet.create({
   },
   gameEngineOverlay: {
     zIndex: 10,
+  },
+  comboFloater: {
+    position: 'absolute',
+    top: -12,
+    zIndex: 50,
+    borderRadius: 20,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+  },
+  comboFloaterGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  comboFloaterText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '900',
+    letterSpacing: 0.8,
   },
 });

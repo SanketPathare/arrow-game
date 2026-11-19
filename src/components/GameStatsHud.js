@@ -9,6 +9,9 @@ export function GameStatsHud({
   timer = 0,
   remaining = 6,
   total = 6,
+  isBlitz = false,
+  blitzScore = 0,
+  blitzTimeRemaining = 60,
 }) {
   const { width } = useWindowDimensions();
   const isNarrow = width < 360;
@@ -28,7 +31,7 @@ export function GameStatsHud({
         <View style={styles.cardSheen} />
 
         <View style={[styles.statsContent, isNarrow && { paddingVertical: 6, paddingHorizontal: 4 }]}>
-          {/* Moves */}
+          {/* Moves or Blitz Score */}
           <View style={styles.statItem}>
             <View
               style={[
@@ -49,21 +52,21 @@ export function GameStatsHud({
                 adjustsFontSizeToFit
                 style={[styles.statValue, isNarrow && { fontSize: 14 }]}
               >
-                {moves}
+                {isBlitz ? blitzScore : moves}
               </Text>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 style={[styles.statLabel, isNarrow && { fontSize: 8 }]}
               >
-                MOVES
+                {isBlitz ? 'SCORE' : 'MOVES'}
               </Text>
             </View>
           </View>
 
           <View style={styles.divider} />
 
-          {/* Time */}
+          {/* Time or Blitz Countdown Timer */}
           <View style={styles.statItem}>
             <View
               style={[
@@ -76,22 +79,26 @@ export function GameStatsHud({
                 },
               ]}
             >
-              <SvgTimer size={iconSize} color="#FFD13B" />
+              <SvgTimer size={iconSize} color={isBlitz && blitzTimeRemaining <= 10 ? '#EF4444' : '#FFD13B'} />
             </View>
             <View style={styles.statTextGroup}>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
-                style={[styles.statValue, isNarrow && { fontSize: 14 }]}
+                style={[
+                  styles.statValue,
+                  isNarrow && { fontSize: 14 },
+                  isBlitz && blitzTimeRemaining <= 10 && { color: '#EF4444' },
+                ]}
               >
-                {formatTime(timer)}
+                {isBlitz ? `${blitzTimeRemaining}s` : formatTime(timer)}
               </Text>
               <Text
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 style={[styles.statLabel, isNarrow && { fontSize: 8 }]}
               >
-                TIME
+                {isBlitz ? 'TIME LEFT' : 'TIME'}
               </Text>
             </View>
           </View>

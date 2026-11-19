@@ -1029,6 +1029,21 @@ export function SvgGift({ size = 22, color = '#FFD13B' }) {
 }
 
 /**
+ * 2D Tactile Rotate / Pivot Power-Up Icon.
+ */
+export function SvgRotate({ size = 22, color = '#FFFFFF' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {/* Curved Arrow Arc */}
+      <Path
+        d="M 20.5,12 A 8.5,8.5 0 1,1 17.5,5.5 L 21,2 L 21,8.5 L 14.5,8.5 L 18,5 A 9.5,9.5 0 1,0 21.5,12 Z"
+        fill={color}
+      />
+    </Svg>
+  );
+}
+
+/**
  * 2D Golden Royal Crown Icon for Player Rank.
  */
 export function SvgCrown({ size = 22, color = '#FFD13B' }) {
@@ -1133,6 +1148,12 @@ export function GameSvgIcon({
     case 'help-sharp':
     case 'question':
       return <SvgHelp size={size} color={color} {...props} />;
+    case 'rotate':
+    case 'pivot':
+      return <SvgRotate size={size} color={color} {...props} />;
+    case 'bolt':
+    case 'blitz':
+      return <SvgFlash size={size} color={color} {...props} />;
     case 'settings':
     case 'settings-sharp':
     case 'settings-outline':

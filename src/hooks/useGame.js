@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLevelData, getDailyPuzzle } from '../engine/levelData.js';
+import { generatePuzzle } from '../engine/levelGenerator.js';
 import { checkArrowMove, getBestHintArrow } from '../engine/collisionDetection.js';
 import { calculateStars } from '../engine/puzzleEngine.js';
 import { soundManager } from '../utils/sound.js';
@@ -10,6 +11,16 @@ export function useGame() {
   const [isDaily, setIsDaily] = useState(false);
   const [dailyDate, setDailyDate] = useState('');
   const [levelData, setLevelData] = useState(null);
+
+  // Blitz Rush mode state
+  const [isBlitz, setIsBlitz] = useState(false);
+  const [blitzScore, setBlitzScore] = useState(0);
+  const [blitzTimeRemaining, setBlitzTimeRemaining] = useState(60);
+  const [blitzBoardsCleared, setBlitzBoardsCleared] = useState(0);
+
+  // Tactical features: Combo
+  const [combo, setCombo] = useState(0);
+  const [maxCombo, setMaxCombo] = useState(0);
 
   const [activeArrows, setActiveArrows] = useState([]);
   const [exitingArrowIds, setExitingArrowIds] = useState(new Set());
@@ -33,15 +44,25 @@ export function useGame() {
   const resolvingRef = useRef(false);
   const gameSessionRef = useRef(0);
 
+  const blitzScoreRef = useRef(blitzScore);
+  const blitzBoardsClearedRef = useRef(blitzBoardsCleared);
+  const maxComboRef = useRef(maxCombo);
+
+  useEffect(() => {
+    blitzScoreRef.current = blitzScore;
+    blitzBoardsClearedRef.current = blitzBoardsCleared;
+    maxComboRef.current = maxCombo;
+  }, [blitzScore, blitzBoardsCleared, maxCombo]);
+
   useEffect(() => () => {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
   }, []);
 
-  // Timer interval
+  // Standard timer interval (for Campaign & Daily)
   useEffect(() => {
-    if (isPlaying && !isPaused && !isCompleted) {
+    if (isPlaying && !isPaused && !isCompleted && !isBlitz) {
       timerRef.current = setInterval(() => {
         setTimer((t) => t + 1);
       }, 1000);
@@ -51,9 +72,36 @@ export function useGame() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, isPaused, isCompleted]);
+  }, [isPlaying, isPaused, isCompleted, isBlitz]);
 
-  // Load level
+  // Blitz countdown timer interval
+  useEffect(() => {
+    let blitzInterval = null;
+    if (isPlaying && !isPaused && !isCompleted && isBlitz) {
+      blitzInterval = setInterval(() => {
+        setBlitzTimeRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(blitzInterval);
+            setIsPlaying(false);
+            setIsCompleted(true);
+            soundManager.playVictorySound();
+            StorageService.saveBlitzResult(
+              blitzScoreRef.current,
+              blitzBoardsClearedRef.current,
+              maxComboRef.current
+            );
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (blitzInterval) clearInterval(blitzInterval);
+    };
+  }, [isPlaying, isPaused, isCompleted, isBlitz]);
+
+  // Load level (Campaign or Daily)
   const loadLevel = useCallback((lvl, isDailyChallenge = false, customDate = '') => {
     gameSessionRef.current += 1;
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
@@ -76,8 +124,52 @@ export function useGame() {
       setLevelNumber(safeLvl);
     }
 
+    setIsBlitz(false);
+    setBlitzScore(0);
+    setBlitzTimeRemaining(60);
+    setBlitzBoardsCleared(0);
+
+    setCombo(0);
+    setMaxCombo(0);
+
     setLevelData(data);
     setActiveArrows([...data.arrows]);
+    setExitingArrowIds(new Set());
+    setUndoStack([]);
+    setMoves(0);
+    setTimer(0);
+    setIsPlaying(true);
+    setIsPaused(false);
+    setIsCompleted(false);
+    setStars(0);
+    setBlockedArrowId(null);
+    setBlockingArrowId(null);
+    setHintArrowId(null);
+  }, []);
+
+  // Load 60-Second Blitz Rush Mode
+  const loadBlitz = useCallback(() => {
+    gameSessionRef.current += 1;
+    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
+    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    resolvingRef.current = false;
+
+    // Initial 4x4 fast puzzle
+    const puzzle = generatePuzzle(4, 6, Date.now());
+    setIsBlitz(true);
+    setIsDaily(false);
+    setDailyDate('');
+    setLevelNumber('Blitz');
+    setBlitzScore(0);
+    setBlitzTimeRemaining(60);
+    setBlitzBoardsCleared(0);
+
+    setCombo(0);
+    setMaxCombo(0);
+
+    setLevelData(puzzle);
+    setActiveArrows([...puzzle.arrows]);
     setExitingArrowIds(new Set());
     setUndoStack([]);
     setMoves(0);
@@ -109,7 +201,8 @@ export function useGame() {
       );
 
       if (!canEscape) {
-        // Blocked! Provide sensory feedback and shake
+        // Blocked! Reset combo streak
+        setCombo(0);
         soundManager.playBlockedSound();
         setBlockedArrowId(arrow.id);
         if (blockingArrow) setBlockingArrowId(blockingArrow.id);
@@ -126,17 +219,31 @@ export function useGame() {
 
       // Can escape!
       resolvingRef.current = true;
-      soundManager.playEscapeSound();
+      const nextCombo = combo + 1;
+      setCombo(nextCombo);
+      setMaxCombo((prev) => Math.max(prev, nextCombo));
+      soundManager.playEscapeSound(nextCombo);
 
-      // Track undo
-      setUndoStack((prev) => [
-        ...prev,
-        {
-          arrow,
-          prevActiveArrows: [...activeArrows],
-          prevMoves: moves,
-        },
-      ]);
+      if (nextCombo >= 3) {
+        soundManager.playComboSound();
+      }
+
+      if (isBlitz) {
+        setBlitzScore((s) => s + 100 + nextCombo * 25);
+      }
+
+      // Track undo (only in non-Blitz mode)
+      if (!isBlitz) {
+        setUndoStack((prev) => [
+          ...prev,
+          {
+            arrow,
+            prevActiveArrows: [...activeArrows],
+            prevMoves: moves,
+            prevCombo: combo,
+          },
+        ]);
+      }
 
       // Mark arrow as exiting (triggers exit flight animation)
       setExitingArrowIds((prev) => new Set([...prev, arrow.id]));
@@ -151,6 +258,27 @@ export function useGame() {
         setActiveArrows(updated);
 
         if (updated.length === 0) {
+          if (isBlitz) {
+            // Blitz mode: Board Cleared! Add bonus time (+5s), bonus points, and immediately spawn next puzzle
+            const nextCleared = blitzBoardsCleared + 1;
+            setBlitzBoardsCleared(nextCleared);
+            setBlitzScore((s) => s + 500 + nextCombo * 50);
+            setBlitzTimeRemaining((prev) => Math.min(99, prev + 5));
+            soundManager.playVictorySound();
+
+            // Next procedural board
+            const nextSize = nextCleared < 3 ? 4 : nextCleared < 6 ? 5 : 6;
+            const nextArrowCount = Math.min(nextSize * nextSize - 2, 4 + nextCleared * 2);
+            const nextPuzzle = generatePuzzle(nextSize, nextArrowCount, Date.now() + nextCleared);
+
+            setLevelData(nextPuzzle);
+            setActiveArrows([...nextPuzzle.arrows]);
+            setExitingArrowIds(new Set());
+            resolvingRef.current = false;
+            return;
+          }
+
+          // Standard Campaign / Daily Completion
           const finalMoves = moves + 1;
           const earnedStars = calculateStars(finalMoves, levelData.arrowCount, timer);
           setIsPlaying(false);
@@ -187,12 +315,15 @@ export function useGame() {
       isDaily,
       dailyDate,
       levelNumber,
+      combo,
+      isBlitz,
+      blitzBoardsCleared,
     ]
   );
 
   // Undo last move
   const handleUndo = useCallback(() => {
-    if (undoStack.length === 0 || isCompleted || isPaused || resolvingRef.current) return;
+    if (undoStack.length === 0 || isCompleted || isPaused || resolvingRef.current || isBlitz) return;
 
     soundManager.playClickSound();
     const lastEntry = undoStack[undoStack.length - 1];
@@ -201,11 +332,12 @@ export function useGame() {
     // Restore arrows and state
     setActiveArrows(lastEntry.prevActiveArrows);
     setMoves(lastEntry.prevMoves);
+    setCombo(lastEntry.prevCombo || 0);
     setExitingArrowIds(new Set());
     setBlockedArrowId(null);
     setBlockingArrowId(null);
     setHintArrowId(null);
-  }, [undoStack, isCompleted, isPaused]);
+  }, [undoStack, isCompleted, isPaused, isBlitz]);
 
   // Request a hint
   const handleHint = useCallback(() => {
@@ -232,12 +364,20 @@ export function useGame() {
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
     resolvingRef.current = false;
+
+    if (isBlitz) {
+      loadBlitz();
+      return;
+    }
+
     if (levelData) {
       setActiveArrows([...levelData.arrows]);
       setExitingArrowIds(new Set());
       setUndoStack([]);
       setMoves(0);
       setTimer(0);
+      setCombo(0);
+      setMaxCombo(0);
       setIsPlaying(true);
       setIsPaused(false);
       setIsCompleted(false);
@@ -246,7 +386,7 @@ export function useGame() {
       setBlockingArrowId(null);
       setHintArrowId(null);
     }
-  }, [levelData]);
+  }, [levelData, isBlitz, loadBlitz]);
 
   // Pause / Resume
   const togglePause = useCallback(() => {
@@ -280,7 +420,14 @@ export function useGame() {
     blockedArrowId,
     blockingArrowId,
     hintArrowId,
-    canUndo: undoStack.length > 0 && !isCompleted && exitingArrowIds.size === 0,
+    canUndo: undoStack.length > 0 && !isCompleted && exitingArrowIds.size === 0 && !isBlitz,
+    combo,
+    maxCombo,
+    isBlitz,
+    blitzScore,
+    blitzTimeRemaining,
+    blitzBoardsCleared,
+    loadBlitz,
     loadLevel,
     handleArrowPress,
     handleUndo,

@@ -154,6 +154,35 @@ export const StorageService = {
     }
   },
 
+  async getBlitzStats() {
+    try {
+      const val = await AsyncStorage.getItem(STORAGE_KEYS.BLITZ_STATS);
+      if (val) {
+        return JSON.parse(val);
+      }
+      return { highScore: 0, maxBoardsSolved: 0, gamesPlayed: 0 };
+    } catch (_e) {
+      return { highScore: 0, maxBoardsSolved: 0, gamesPlayed: 0 };
+    }
+  },
+
+  async saveBlitzResult(score, boardsSolved) {
+    try {
+      const stats = await this.getBlitzStats();
+      const updated = {
+        highScore: Math.max(stats.highScore || 0, score),
+        maxBoardsSolved: Math.max(stats.maxBoardsSolved || 0, boardsSolved),
+        gamesPlayed: (stats.gamesPlayed || 0) + 1,
+        lastPlayed: Date.now(),
+      };
+      await AsyncStorage.setItem(STORAGE_KEYS.BLITZ_STATS, JSON.stringify(updated));
+      return updated;
+    } catch (e) {
+      console.warn('Failed to save blitz result:', e);
+      return { highScore: score, maxBoardsSolved: boardsSolved, gamesPlayed: 1 };
+    }
+  },
+
   async resetAllProgress() {
     try {
       await AsyncStorage.multiRemove([
@@ -161,6 +190,7 @@ export const StorageService = {
         STORAGE_KEYS.LEVEL_STATS,
         STORAGE_KEYS.DAILY_STATS,
         STORAGE_KEYS.DAILY_GIFT,
+        STORAGE_KEYS.BLITZ_STATS,
       ]);
       return true;
     } catch (e) {

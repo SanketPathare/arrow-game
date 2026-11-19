@@ -95,6 +95,11 @@ export default function App() {
     setCurrentScreen('game');
   }, [game]);
 
+  const handlePlayBlitz = useCallback(() => {
+    game.loadBlitz();
+    setCurrentScreen('game');
+  }, [game]);
+
   const handleUpdateSettings = useCallback(async (newSettings) => {
     setSettings((prev) => {
       const updated = { ...prev, ...newSettings };
@@ -152,6 +157,7 @@ export default function App() {
                 levelStats={levelStats}
                 dailyStats={dailyStats}
                 onPlay={handlePlayLevel}
+                onPlayBlitz={handlePlayBlitz}
                 onOpenLevelSelect={() => setCurrentScreen('levelSelect')}
                 onOpenDaily={handlePlayDaily}
                 onOpenSettings={() => setCurrentScreen('settings')}

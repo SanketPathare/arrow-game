@@ -89,6 +89,26 @@ const ACHIEVEMENTS_DEF = [
     calcProgress: (stats) => Math.min(3, stats.streak),
   },
   {
+    id: 'blitz_master',
+    title: 'Blitz Runner',
+    desc: 'Score over 1,500 points in 60s Blitz Rush',
+    target: 1500,
+    icon: 'flash',
+    color: '#F43F5E',
+    reward: 'Neon Bolt',
+    calcProgress: (stats) => Math.min(1500, stats.blitzHighScore || 0),
+  },
+  {
+    id: 'combo_master',
+    title: 'Chain Master',
+    desc: 'Hit a 5x escape combo streak',
+    target: 5,
+    icon: 'star',
+    color: '#A855F7',
+    reward: 'Harmonic Ring',
+    calcProgress: (stats) => Math.min(5, stats.blitzBestCombo || 0),
+  },
+  {
     id: 'sector_pro',
     title: 'Labyrinth Veteran',
     desc: 'Reach Level 20 in the campaign',
@@ -115,6 +135,7 @@ export function HomeScreen({
   levelStats = {},
   dailyStats = {},
   onPlay,
+  onPlayBlitz,
   onOpenLevelSelect,
   onOpenDaily,
   onOpenSettings,
@@ -124,6 +145,7 @@ export function HomeScreen({
   const [showAchievements, setShowAchievements] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [giftClaimedDate, setGiftClaimedDate] = useState(null);
+  const [blitzStats, setBlitzStats] = useState({ highScore: 0, mostCleared: 0, bestCombo: 0 });
 
   const { width, height } = useWindowDimensions();
   const isNarrow = width < 360;
@@ -134,13 +156,17 @@ export function HomeScreen({
   const isDailyCompletedToday = dailyStats?.lastPlayedDate === todayStr;
   const isGiftClaimedToday = giftClaimedDate === todayStr;
 
-  // Check daily gift claim on mount
+  // Check daily gift claim & blitz stats on mount
   useEffect(() => {
-    async function checkGift() {
-      const claimedDate = await StorageService.getDailyGiftClaimedDate();
+    async function loadPersistentStats() {
+      const [claimedDate, blitz] = await Promise.all([
+        StorageService.getDailyGiftClaimedDate(),
+        StorageService.getBlitzStats(),
+      ]);
       setGiftClaimedDate(claimedDate);
+      if (blitz) setBlitzStats(blitz);
     }
-    checkGift();
+    loadPersistentStats();
   }, [todayStr]);
 
   // Compute game statistics
@@ -190,8 +216,10 @@ export function HomeScreen({
       threeStarCount,
       streak,
       unlockedLevel,
+      blitzHighScore: blitzStats?.highScore || 0,
+      blitzBestCombo: blitzStats?.bestCombo || 0,
     }),
-    [completedLevels, totalStars, threeStarCount, streak, unlockedLevel]
+    [completedLevels, totalStars, threeStarCount, streak, unlockedLevel, blitzStats]
   );
 
   const completedAchievementsCount = useMemo(() => {
@@ -348,6 +376,48 @@ export function HomeScreen({
           </LinearGradient>
         </View>
 
+        {/* Blitz Rush 60s Time Attack Arcade Mode */}
+        <View style={styles.blitzContainer}>
+          <View style={styles.blitzCardShadow} />
+          <LinearGradient
+            colors={['#2D1322', '#1C0B15', '#10050C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.blitzCardFace}
+          >
+            <View style={styles.blitzSheen} />
+            <View style={styles.blitzContentRow}>
+              <View style={styles.blitzIconBox}>
+                <SvgFlash size={22} color="#F43F5E" />
+              </View>
+
+              <View style={styles.blitzTextGroup}>
+                <View style={styles.blitzBadgeRow}>
+                  <Text style={styles.blitzTitle}>BLITZ RUSH</Text>
+                  <View style={styles.blitzTimerTag}>
+                    <Text style={styles.blitzTimerTagText}>60s ATTACK</Text>
+                  </View>
+                </View>
+                <Text style={styles.blitzSubtitle}>
+                  {blitzStats?.highScore > 0
+                    ? `High Score: ${blitzStats.highScore} pts • Best: ${blitzStats.mostCleared} boards`
+                    : 'Fast arcade time attack! Clear boards for +5s bonus time.'}
+                </Text>
+              </View>
+
+              <ThreeDButton
+                title="Rush"
+                icon="bolt"
+                iconSize={15}
+                colorScheme="orange"
+                size="sm"
+                onPress={onPlayBlitz}
+                style={{ minWidth: 80 }}
+              />
+            </View>
+          </LinearGradient>
+        </View>
+
         {/* 2-Column Game Modes Row */}
         <View style={styles.modesRow}>
           {/* Daily Quest Mode Card */}
@@ -497,6 +567,7 @@ export function HomeScreen({
         title="HOW TO PLAY"
         subtitle="Plan each move. Clear every arrow."
         maxWidth={360}
+        showClose={true}
       >
         <View style={styles.rulesTray}>
           <View style={styles.ruleItem}>
@@ -568,6 +639,7 @@ export function HomeScreen({
         title="HALL OF MASTERY"
         subtitle={`${completedAchievementsCount} of ${ACHIEVEMENTS_DEF.length} Badges Unlocked`}
         maxWidth={380}
+        showClose={true}
       >
         <View style={styles.achievementsTray}>
           {ACHIEVEMENTS_DEF.map((ach) => {
@@ -650,6 +722,7 @@ export function HomeScreen({
         title="SUPPLY SECURED!"
         subtitle="Daily tactical supplies added to your vault"
         maxWidth={360}
+        showClose={true}
       >
         <View style={styles.giftRewardBox}>
           <LinearGradient
@@ -870,6 +943,90 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
 
+  // Blitz Rush Mode Card
+  blitzContainer: {
+    width: '100%',
+    position: 'relative',
+    marginVertical: 4,
+  },
+  blitzCardShadow: {
+    position: 'absolute',
+    top: 4,
+    left: 2,
+    right: 2,
+    bottom: -4,
+    borderRadius: 18,
+    backgroundColor: '#020617',
+    elevation: 4,
+  },
+  blitzCardFace: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: 'rgba(244, 63, 94, 0.45)',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  blitzSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '40%',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  blitzContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blitzIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: 'rgba(244, 63, 94, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  blitzTextGroup: {
+    flex: 1,
+    marginRight: 8,
+  },
+  blitzBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blitzTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#FECDD3',
+    letterSpacing: 0.8,
+  },
+  blitzTimerTag: {
+    backgroundColor: 'rgba(244, 63, 94, 0.25)',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    marginLeft: 6,
+    borderWidth: 0.8,
+    borderColor: '#F43F5E',
+  },
+  blitzTimerTagText: {
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: '#FFE4E6',
+    letterSpacing: 0.5,
+  },
+  blitzSubtitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FDA4AF',
+    marginTop: 2,
+    lineHeight: 14,
+  },
+
   // 2-Column Mode Tiles Row
   modesRow: {
     width: '100%',
@@ -1033,7 +1190,8 @@ const styles = StyleSheet.create({
 
   // Modals styling
   modalBtn: {
-    marginTop: 8,
+    marginTop: 10,
+    marginBottom: 12,
   },
   rulesTray: {
     backgroundColor: 'rgba(2, 6, 23, 0.58)',

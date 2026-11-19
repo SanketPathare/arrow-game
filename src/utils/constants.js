@@ -51,6 +51,8 @@ export const STORAGE_KEYS = {
   SETTINGS: '@arrow_escape_settings',
   DAILY_STATS: '@arrow_escape_daily_stats',
   DAILY_GIFT: '@arrow_escape_daily_gift',
+  BLITZ_STATS: '@arrow_escape_blitz_stats',
+  TACTICAL_STATS: '@arrow_escape_tactical_stats',
 };
 
 export const THEMES = {

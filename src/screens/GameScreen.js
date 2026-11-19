@@ -39,6 +39,12 @@ export function GameScreen({
     blockedArrowId,
     blockingArrowId,
     hintArrowId,
+    combo,
+    maxCombo,
+    isBlitz,
+    blitzScore,
+    blitzTimeRemaining,
+    blitzBoardsCleared,
     handleArrowPress,
     handleHint,
     handleRestart,
@@ -50,10 +56,10 @@ export function GameScreen({
   const isNarrow = width < 360;
   const isShort = height < 700;
   const titleSize = isNarrow
-    ? (isDaily ? 15 : 20)
+    ? (isBlitz ? 18 : isDaily ? 15 : 20)
     : isShort
-    ? (isDaily ? 17 : 24)
-    : (isDaily ? 19 : 28);
+    ? (isBlitz ? 21 : isDaily ? 17 : 24)
+    : (isBlitz ? 24 : isDaily ? 19 : 28);
 
   // Handle hardware Android back button
   useEffect(() => {
@@ -106,17 +112,17 @@ export function GameScreen({
           {/* Center Title & Difficulty Badge */}
           <View style={styles.titleColumn}>
             <ThreeDText
-              text={isDaily ? 'DAILY CHALLENGE' : `LEVEL ${levelNumber}`}
+              text={isBlitz ? 'BLITZ RUSH' : isDaily ? 'DAILY CHALLENGE' : `LEVEL ${levelNumber}`}
               size={titleSize}
-              color="#FFE8A3"
-              depthColor="#C77700"
+              color={isBlitz ? '#FFD13B' : '#FFE8A3'}
+              depthColor={isBlitz ? '#B45309' : '#C77700'}
               depth={isNarrow ? 4 : 5}
               strokeColor="#6E3D00"
             />
             <TactilePill
               type="difficulty"
-              sizeText={`${levelData.boardSize}X${levelData.boardSize}`}
-              difficulty={levelData.difficulty}
+              sizeText={isBlitz ? `SOLVED: ${blitzBoardsCleared}` : `${levelData.boardSize}X${levelData.boardSize}`}
+              difficulty={isBlitz ? '60S ATTACK' : levelData.difficulty}
             />
           </View>
 
@@ -136,6 +142,9 @@ export function GameScreen({
           timer={timer}
           remaining={remainingCount}
           total={totalCount}
+          isBlitz={isBlitz}
+          blitzScore={blitzScore}
+          blitzTimeRemaining={blitzTimeRemaining}
         />
 
         {/* Centered 3D Stone Puzzle Board */}
@@ -147,6 +156,7 @@ export function GameScreen({
             blockedArrowId={blockedArrowId}
             blockingArrowId={blockingArrowId}
             hintArrowId={hintArrowId}
+            combo={combo}
             zone={zoneConfig.id}
             onArrowPress={handleArrowPress}
             theme={theme}
@@ -210,11 +220,15 @@ export function GameScreen({
           visible={isCompleted}
           levelNumber={levelNumber}
           isDaily={isDaily}
+          isBlitz={isBlitz}
+          blitzScore={blitzScore}
+          blitzBoardsCleared={blitzBoardsCleared}
+          maxCombo={maxCombo}
           stars={stars}
           moves={moves}
           optimalMoves={levelData.optimalMoves}
           time={timer}
-          hasNextLevel={typeof levelNumber === 'number' && levelNumber < 50}
+          hasNextLevel={!isBlitz && typeof levelNumber === 'number' && levelNumber < 50}
           onNextLevel={handleNextLevel}
           onReplay={handleRestart}
           onLevelSelect={onNavigateLevelSelect}
