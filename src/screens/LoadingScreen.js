@@ -84,7 +84,7 @@ export function LoadingScreen({ onFinish, theme }) {
   if (frame === 1) {
     return (
       <View style={styles.whiteContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <StatusBar hidden={true} />
         <Animated.View style={{ opacity: frame1Opacity }}>
           <Text style={styles.studioText}>LayerNLooms Studio</Text>
         </Animated.View>
@@ -97,7 +97,7 @@ export function LoadingScreen({ onFinish, theme }) {
   // ----------------------------------------------------
   return (
     <GameBackground type="home" theme={theme}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
+      <StatusBar hidden={true} backgroundColor="transparent" translucent={true} />
       <Animated.View
         style={[
           styles.themeContainer,

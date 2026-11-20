@@ -7,9 +7,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "androidStatusBar": {
+      "hidden": true,
       "barStyle": "light-content",
       "backgroundColor": "#00000000",
       "translucent": true
+    },
+    "androidNavigationBar": {
+      "visible": "sticky-immersive",
+      "backgroundColor": "#00000000"
     },
     "ios": {
       "supportsTablet": true

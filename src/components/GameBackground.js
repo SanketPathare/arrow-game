@@ -83,9 +83,13 @@ export function GameBackground({
 const styles = StyleSheet.create({
   fullScreenBackground: {
     flex: 1,
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#060814',
   },
   safeContentContainer: {
     flex: 1,
+    width: '100%',
   },
   responsiveMaxConstraint: {
     flex: 1,

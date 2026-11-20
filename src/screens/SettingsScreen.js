@@ -11,7 +11,7 @@ import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { ThreeDModalPlaque } from '../components/ThreeDModalPlaque.js';
 import { soundManager } from '../utils/sound.js';
-import { SvgSound, SvgHaptic, SvgTheme, SvgTrash } from '../components/SvgIcons.js';
+import { SvgSound, SvgHaptic, SvgTrash } from '../components/SvgIcons.js';
 
 export function SettingsScreen({
   settings,
@@ -33,11 +33,6 @@ export function SettingsScreen({
   const toggleHaptics = (val) => {
     soundManager.playClickSound();
     onUpdateSettings({ hapticsEnabled: val });
-  };
-
-  const toggleDarkMode = (val) => {
-    soundManager.playClickSound();
-    onUpdateSettings({ darkMode: val });
   };
 
   const confirmReset = async () => {
@@ -109,32 +104,6 @@ export function SettingsScreen({
                 value={settings.hapticsEnabled}
                 onValueChange={toggleHaptics}
                 trackColor={{ false: '#314A70', true: '#FFD13B' }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-          </View>
-
-          {/* Theme Section */}
-          <Text style={styles.sectionHeader}>APPEARANCE</Text>
-          <View style={styles.card}>
-            <View style={styles.row}>
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(129, 140, 248, 0.16)' }]}>
-                  <SvgTheme
-                    size={20}
-                    darkMode={settings.darkMode}
-                    color={settings.darkMode ? '#818CF8' : '#FFD13B'}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rowTitle}>Dark theme</Text>
-                  <Text style={styles.rowSubtitle}>Choose a moonlit or daylight palette</Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.darkMode}
-                onValueChange={toggleDarkMode}
-                trackColor={{ false: '#314A70', true: '#818CF8' }}
                 thumbColor="#FFFFFF"
               />
             </View>

@@ -30,8 +30,13 @@ export default function App() {
   // Main game hook
   const game = useGame();
 
-  // Active theme based on settings
-  const theme = settings.darkMode ? THEMES.dark : THEMES.light;
+  // Active theme (always use dark fantasy theme)
+  const theme = THEMES.dark;
+
+  // Ensure full-screen display and hide status bar
+  useEffect(() => {
+    StatusBar.setHidden(true, 'none');
+  }, []);
 
   // Sync sound manager with settings
   useEffect(() => {
@@ -139,7 +144,7 @@ export default function App() {
     <SafeAreaProvider>
       <View style={styles.rootContainer}>
         <StatusBar
-          barStyle={!isReady ? 'dark-content' : (settings.darkMode ? 'light-content' : 'dark-content')}
+          hidden={true}
           backgroundColor="transparent"
           translucent={true}
         />
@@ -150,7 +155,7 @@ export default function App() {
             theme={theme}
           />
         ) : (
-          <>
+          <View style={styles.screenWrapper}>
             {currentScreen === 'home' && (
               <HomeScreen
                 unlockedLevel={unlockedLevel}
@@ -197,7 +202,7 @@ export default function App() {
                 theme={theme}
               />
             )}
-          </>
+          </View>
         )}
       </View>
     </SafeAreaProvider>
@@ -207,7 +212,14 @@ export default function App() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: '#060814',
+  },
+  screenWrapper: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   loadingContainer: {
     flex: 1,
