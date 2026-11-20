@@ -37,11 +37,20 @@ export function useGame() {
   const [blockingArrowId, setBlockingArrowId] = useState(null);
   const [hintArrowId, setHintArrowId] = useState(null);
 
+  // Lives system: 3 hearts per game, auto-restarts on 0 lives
+  const [lives, setLives] = useState(3);
+  const livesRef = useRef(3);
+
+  // Hint limitation: maximum 2 hints per game
+  const [hintsRemaining, setHintsRemaining] = useState(2);
+  const hintsRemainingRef = useRef(2);
+
   const timerRef = useRef(null);
   const resolutionTimerRef = useRef(null);
   const blockedTimeoutRef = useRef(null);
   const hintTimeoutRef = useRef(null);
   const comboTimeoutRef = useRef(null);
+  const autoRestartTimerRef = useRef(null);
   const comboRef = useRef(0);
   const resolvingRef = useRef(false);
   const gameSessionRef = useRef(0);
@@ -64,6 +73,7 @@ export function useGame() {
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
     if (comboTimeoutRef.current) clearTimeout(comboTimeoutRef.current);
+    if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
   }, []);
 
   // Standard timer interval (for Campaign & Daily)
@@ -113,12 +123,19 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
     if (comboTimeoutRef.current) {
       clearTimeout(comboTimeoutRef.current);
       comboTimeoutRef.current = null;
     }
     comboRef.current = 0;
     resolvingRef.current = false;
+
+    // Reset lives and hints
+    livesRef.current = 3;
+    setLives(3);
+    hintsRemainingRef.current = 2;
+    setHintsRemaining(2);
 
     let data;
     if (isDailyChallenge) {
@@ -164,12 +181,19 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
     if (comboTimeoutRef.current) {
       clearTimeout(comboTimeoutRef.current);
       comboTimeoutRef.current = null;
     }
     comboRef.current = 0;
     resolvingRef.current = false;
+
+    // Reset lives and hints
+    livesRef.current = 3;
+    setLives(3);
+    hintsRemainingRef.current = 2;
+    setHintsRemaining(2);
 
     // Initial 4x4 fast puzzle (all 16 cells filled)
     const puzzle = generatePuzzle(4, 16, Date.now());
@@ -198,6 +222,50 @@ export function useGame() {
     setBlockingArrowId(null);
     setHintArrowId(null);
   }, []);
+
+  // Restart level
+  const handleRestart = useCallback(() => {
+    soundManager.playClickSound();
+    gameSessionRef.current += 1;
+    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
+    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current);
+      comboTimeoutRef.current = null;
+    }
+    comboRef.current = 0;
+    resolvingRef.current = false;
+
+    // Reset lives and hints
+    livesRef.current = 3;
+    setLives(3);
+    hintsRemainingRef.current = 2;
+    setHintsRemaining(2);
+
+    if (isBlitz) {
+      loadBlitz();
+      return;
+    }
+
+    if (levelData) {
+      setActiveArrows([...levelData.arrows]);
+      setExitingArrowIds(new Set());
+      setUndoStack([]);
+      setMoves(0);
+      setTimer(0);
+      setCombo(0);
+      setMaxCombo(0);
+      setIsPlaying(true);
+      setIsPaused(false);
+      setIsCompleted(false);
+      setStars(0);
+      setBlockedArrowId(null);
+      setBlockingArrowId(null);
+      setHintArrowId(null);
+    }
+  }, [levelData, isBlitz, loadBlitz]);
 
   // Handle arrow tap
   const handleArrowPress = useCallback(
@@ -230,6 +298,21 @@ export function useGame() {
 
         // Blocked tap counts as a move / mistake, increasing challenge for 3-star mastery
         setMoves((m) => m + 1);
+
+        // Decrement lives system (starts at 3 hearts)
+        const nextLives = Math.max(0, livesRef.current - 1);
+        livesRef.current = nextLives;
+        setLives(nextLives);
+
+        // If player makes three mistakes (0 lives), automatically restart the game
+        if (nextLives === 0) {
+          resolvingRef.current = true;
+          soundManager.playDefeatSound();
+          if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
+          autoRestartTimerRef.current = setTimeout(() => {
+            handleRestart();
+          }, 850);
+        }
 
         // Reset shake after animation duration
         if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
@@ -363,6 +446,7 @@ export function useGame() {
       combo,
       isBlitz,
       blitzBoardsCleared,
+      handleRestart,
     ]
   );
 
@@ -389,11 +473,24 @@ export function useGame() {
     setHintArrowId(null);
   }, [undoStack, isCompleted, isPaused, isBlitz]);
 
-  // Request a hint
+  // Request a hint (limited to maximum 2 times per game)
   const handleHint = useCallback(() => {
-    if (isCompleted || isPaused || resolvingRef.current || activeArrows.length === 0 || !levelData) return;
+    if (
+      isCompleted ||
+      isPaused ||
+      resolvingRef.current ||
+      activeArrows.length === 0 ||
+      !levelData ||
+      hintsRemainingRef.current <= 0
+    ) {
+      return;
+    }
 
     soundManager.playClickSound();
+    const nextHints = hintsRemainingRef.current - 1;
+    hintsRemainingRef.current = nextHints;
+    setHintsRemaining(nextHints);
+
     const best = getBestHintArrow(activeArrows, levelData.boardSize);
     if (best) {
       setHintArrowId(best.id);
@@ -405,43 +502,6 @@ export function useGame() {
       }, 3500);
     }
   }, [isCompleted, isPaused, activeArrows, levelData]);
-
-  // Restart level
-  const handleRestart = useCallback(() => {
-    soundManager.playClickSound();
-    gameSessionRef.current += 1;
-    if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
-    if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
-    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
-    if (comboTimeoutRef.current) {
-      clearTimeout(comboTimeoutRef.current);
-      comboTimeoutRef.current = null;
-    }
-    comboRef.current = 0;
-    resolvingRef.current = false;
-
-    if (isBlitz) {
-      loadBlitz();
-      return;
-    }
-
-    if (levelData) {
-      setActiveArrows([...levelData.arrows]);
-      setExitingArrowIds(new Set());
-      setUndoStack([]);
-      setMoves(0);
-      setTimer(0);
-      setCombo(0);
-      setMaxCombo(0);
-      setIsPlaying(true);
-      setIsPaused(false);
-      setIsCompleted(false);
-      setStars(0);
-      setBlockedArrowId(null);
-      setBlockingArrowId(null);
-      setHintArrowId(null);
-    }
-  }, [levelData, isBlitz, loadBlitz]);
 
   // Pause / Resume
   const togglePause = useCallback(() => {
@@ -489,6 +549,8 @@ export function useGame() {
     canUndo: undoStack.length > 0 && !isCompleted && exitingArrowIds.size === 0 && !isBlitz,
     combo,
     maxCombo,
+    lives,
+    hintsRemaining,
     isBlitz,
     blitzScore,
     blitzTimeRemaining,

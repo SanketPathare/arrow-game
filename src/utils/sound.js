@@ -110,6 +110,15 @@ class SoundManager {
     this.hapticBlocked();
   }
 
+  playDefeatSound() {
+    if (this.soundEnabled) {
+      this.playWebTone(310, 'sawtooth', 0.18, 0.2);
+      setTimeout(() => this.playWebTone(240, 'sawtooth', 0.22, 0.2), 120);
+      setTimeout(() => this.playWebTone(180, 'sawtooth', 0.35, 0.25), 240);
+    }
+    this.hapticBlocked();
+  }
+
   playVictorySound() {
     if (this.soundEnabled) {
       this.playWebTone(880, 'sine', 0.3);

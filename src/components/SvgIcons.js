@@ -1062,6 +1062,82 @@ export function SvgCrown({ size = 22, color = '#FFD13B' }) {
 }
 
 /**
+ * 3D Faceted Ruby Heart Icon for Lives Display.
+ * Supports filled (full glowing life) and depleted (broken socket) states.
+ */
+export function SvgHeart({
+  size = 22,
+  filled = true,
+  color = '#FF2A6D',
+  ...props
+}) {
+  const heartPath =
+    'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
+
+  if (!filled) {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+        {/* Depleted Socket Silhouette */}
+        <Path
+          d={heartPath}
+          fill="rgba(15, 23, 42, 0.75)"
+          stroke="rgba(148, 163, 184, 0.35)"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+        {/* Subtle crack accent */}
+        <Path
+          d="M12 4.5 L11 8.5 L13 12.5 L11.5 16.5 L12 20"
+          stroke="rgba(148, 163, 184, 0.45)"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+
+  const gradId = `heart_grad_${Math.floor(size)}`;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" {...props}>
+      <Defs>
+        <LinearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0%" stopColor="#FF4D6D" />
+          <Stop offset="45%" stopColor="#E11D48" />
+          <Stop offset="100%" stopColor="#9F1239" />
+        </LinearGradient>
+      </Defs>
+
+      {/* Outer Ruby Drop Glow */}
+      <Path
+        d={heartPath}
+        fill={color}
+        opacity={0.35}
+        transform="scale(1.08) translate(-0.96, -0.96)"
+      />
+
+      {/* Main 3D Ruby Body */}
+      <Path
+        d={heartPath}
+        fill={`url(#${gradId})`}
+        stroke="#FFE4E6"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+
+      {/* Top Left Specular Gloss Sheen */}
+      <Circle cx="7.2" cy="6.8" r="2.2" fill="rgba(255, 255, 255, 0.65)" />
+      <Path
+        d="M5.5 6.5 C6 4.8, 8.8 4.8, 9.5 6.5"
+        stroke="rgba(255, 255, 255, 0.85)"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+/**
  * Universal SVG Icon Resolver: maps icon string names to our clean 2D SVG components.
  */
 export function GameSvgIcon({
@@ -1125,6 +1201,9 @@ export function GameSvgIcon({
       return <SvgClose size={size} color={color} {...props} />;
     case 'flame':
       return <SvgFlame size={size} color={color} {...props} />;
+    case 'heart':
+    case 'hearts':
+      return <SvgHeart size={size} color={color} {...props} />;
     case 'trophy':
     case 'navigate-circle':
       return <SvgTrophy size={size} color={color} {...props} />;

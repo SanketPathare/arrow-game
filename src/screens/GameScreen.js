@@ -9,6 +9,7 @@ import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { ThreeDText } from '../components/ThreeDText.js';
 import { TactilePill } from '../components/TactilePill.js';
+import { SvgHeart } from '../components/SvgIcons.js';
 import { GameStatsHud } from '../components/GameStatsHud.js';
 import { GameBoard } from '../components/GameBoard.js';
 import { PauseModal } from '../components/PauseModal.js';
@@ -41,6 +42,8 @@ export function GameScreen({
     hintArrowId,
     combo,
     maxCombo,
+    lives = 3,
+    hintsRemaining = 2,
     isBlitz,
     blitzScore,
     blitzTimeRemaining,
@@ -109,7 +112,7 @@ export function GameScreen({
             }}
           />
 
-          {/* Center Title & Difficulty Badge */}
+          {/* Center Title, Difficulty Badge & 3-Heart Lives Display */}
           <View style={styles.titleColumn}>
             <ThreeDText
               text={isBlitz ? 'BLITZ RUSH' : isDaily ? 'DAILY CHALLENGE' : `LEVEL ${levelNumber}`}
@@ -119,11 +122,31 @@ export function GameScreen({
               depth={isNarrow ? 4 : 5}
               strokeColor="#6E3D00"
             />
-            <TactilePill
-              type="difficulty"
-              sizeText={isBlitz ? `SOLVED: ${blitzBoardsCleared}` : `${levelData.boardSize}X${levelData.boardSize}`}
-              difficulty={isBlitz ? '60S ATTACK' : levelData.difficulty}
-            />
+            <View style={styles.badgeAndLivesRow}>
+              <TactilePill
+                type="difficulty"
+                sizeText={isBlitz ? `SOLVED: ${blitzBoardsCleared}` : `${levelData.boardSize}X${levelData.boardSize}`}
+                difficulty={isBlitz ? '60S ATTACK' : levelData.difficulty}
+              />
+
+              {/* 3-Heart Lives Indicator at top of screen */}
+              <View style={styles.livesPill}>
+                {[1, 2, 3].map((heartIndex) => (
+                  <View
+                    key={heartIndex}
+                    style={[
+                      styles.heartSlot,
+                      lives < heartIndex && styles.heartDepleted,
+                    ]}
+                  >
+                    <SvgHeart
+                      size={isNarrow ? 15 : 18}
+                      filled={lives >= heartIndex}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
           </View>
 
           {/* Circular 3D Pause Button */}
@@ -171,14 +194,15 @@ export function GameScreen({
             isNarrow && { paddingHorizontal: 10 },
           ]}
         >
-          {/* Hint Button (Glossy Warm Yellow/Orange) */}
+          {/* Hint Button (Glossy Warm Yellow/Orange, max 2 uses per game) */}
           <ThreeDButton
-            title="Hint"
+            title={hintsRemaining > 0 ? `Hint (${hintsRemaining})` : 'Hint (0)'}
             icon="bulb"
             iconSize={isNarrow ? 18 : 22}
             colorScheme="yellow"
             size={isShort ? 'sm' : 'md'}
             onPress={handleHint}
+            disabled={hintsRemaining <= 0}
             style={styles.actionBtn}
           />
 
@@ -235,6 +259,20 @@ export function GameScreen({
           onHome={onNavigateHome}
           theme={theme}
         />
+
+        {/* Out of Lives (3 Mistakes) Defeat Notification */}
+        {lives === 0 && (
+          <View style={styles.defeatBanner} pointerEvents="none">
+            <ThreeDText
+              text="💔 OUT OF LIVES! RESTARTING..."
+              size={isNarrow ? 15 : 18}
+              color="#FFE4E6"
+              depthColor="#BE123C"
+              depth={3}
+              strokeColor="#4C0519"
+            />
+          </View>
+        )}
       </View>
     </GameBackground>
   );
@@ -263,6 +301,55 @@ const styles = StyleSheet.create({
   titleColumn: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  badgeAndLivesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 3,
+  },
+  livesPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 77, 109, 0.35)',
+    gap: 4,
+    shadowColor: '#FF2A6D',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  heartSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heartDepleted: {
+    opacity: 0.38,
+    transform: [{ scale: 0.88 }],
+  },
+  defeatBanner: {
+    position: 'absolute',
+    top: '46%',
+    alignSelf: 'center',
+    zIndex: 100,
+    backgroundColor: 'rgba(15, 23, 42, 0.94)',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: '#F43F5E',
+    shadowColor: '#F43F5E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.75,
+    shadowRadius: 10,
+    elevation: 12,
   },
   boardContainer: {
     flex: 1,
