@@ -41,8 +41,18 @@ export function useGame() {
   const resolutionTimerRef = useRef(null);
   const blockedTimeoutRef = useRef(null);
   const hintTimeoutRef = useRef(null);
+  const comboTimeoutRef = useRef(null);
+  const comboRef = useRef(0);
+  const comboTimeoutRef = useRef(null);
+  const comboRef = useRef(0);
   const resolvingRef = useRef(false);
   const gameSessionRef = useRef(0);
+
+  // 1.6s rapid succession window - delay beyond this resets combo to 0
+  const COMBO_WINDOW_MS = 1600;
+
+  // 1.6s rapid succession window - delay beyond this resets combo to 0
+  const COMBO_WINDOW_MS = 1600;
 
   const blitzScoreRef = useRef(blitzScore);
   const blitzBoardsClearedRef = useRef(blitzBoardsCleared);
@@ -58,6 +68,7 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (comboTimeoutRef.current) clearTimeout(comboTimeoutRef.current);
   }, []);
 
   // Standard timer interval (for Campaign & Daily)
@@ -107,6 +118,11 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current);
+      comboTimeoutRef.current = null;
+    }
+    comboRef.current = 0;
     resolvingRef.current = false;
 
     let data;
@@ -153,6 +169,11 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current);
+      comboTimeoutRef.current = null;
+    }
+    comboRef.current = 0;
     resolvingRef.current = false;
 
     // Initial 4x4 fast puzzle
@@ -201,7 +222,12 @@ export function useGame() {
       );
 
       if (!canEscape) {
-        // Blocked! Reset combo streak
+        // Blocked! Reset combo streak immediately
+        if (comboTimeoutRef.current) {
+          clearTimeout(comboTimeoutRef.current);
+          comboTimeoutRef.current = null;
+        }
+        comboRef.current = 0;
         setCombo(0);
         soundManager.playBlockedSound();
         setBlockedArrowId(arrow.id);
@@ -219,7 +245,16 @@ export function useGame() {
 
       // Can escape!
       resolvingRef.current = true;
-      const nextCombo = combo + 1;
+
+      // Clear any pending combo timeout
+      if (comboTimeoutRef.current) {
+        clearTimeout(comboTimeoutRef.current);
+        comboTimeoutRef.current = null;
+      }
+
+      // Rapid succession streak: increment synchronous ref
+      const nextCombo = comboRef.current + 1;
+      comboRef.current = nextCombo;
       setCombo(nextCombo);
       setMaxCombo((prev) => Math.max(prev, nextCombo));
       soundManager.playEscapeSound(nextCombo);
@@ -227,6 +262,14 @@ export function useGame() {
       if (nextCombo >= 3) {
         soundManager.playComboSound();
       }
+
+      // Rapid-succession delay timer:
+      // If player pauses between clicks (> COMBO_WINDOW_MS), combo resets to 0.
+      comboTimeoutRef.current = setTimeout(() => {
+        comboRef.current = 0;
+        setCombo(0);
+        comboTimeoutRef.current = null;
+      }, COMBO_WINDOW_MS);
 
       if (isBlitz) {
         setBlitzScore((s) => s + 100 + nextCombo * 25);
@@ -258,6 +301,10 @@ export function useGame() {
         setActiveArrows(updated);
 
         if (updated.length === 0) {
+          if (comboTimeoutRef.current) {
+            clearTimeout(comboTimeoutRef.current);
+            comboTimeoutRef.current = null;
+          }
           if (isBlitz) {
             // Blitz mode: Board Cleared! Add bonus time (+5s), bonus points, and immediately spawn next puzzle
             const nextCleared = blitzBoardsCleared + 1;
@@ -326,13 +373,18 @@ export function useGame() {
     if (undoStack.length === 0 || isCompleted || isPaused || resolvingRef.current || isBlitz) return;
 
     soundManager.playClickSound();
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current);
+      comboTimeoutRef.current = null;
+    }
+    comboRef.current = 0;
+    setCombo(0);
     const lastEntry = undoStack[undoStack.length - 1];
     setUndoStack((prev) => prev.slice(0, -1));
 
     // Restore arrows and state
     setActiveArrows(lastEntry.prevActiveArrows);
     setMoves(lastEntry.prevMoves);
-    setCombo(lastEntry.prevCombo || 0);
     setExitingArrowIds(new Set());
     setBlockedArrowId(null);
     setBlockingArrowId(null);
@@ -363,6 +415,11 @@ export function useGame() {
     if (resolutionTimerRef.current) clearTimeout(resolutionTimerRef.current);
     if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current);
+      comboTimeoutRef.current = null;
+    }
+    comboRef.current = 0;
     resolvingRef.current = false;
 
     if (isBlitz) {
@@ -391,7 +448,18 @@ export function useGame() {
   // Pause / Resume
   const togglePause = useCallback(() => {
     soundManager.playClickSound();
-    setIsPaused((p) => !p);
+    setIsPaused((p) => {
+      const nextPaused = !p;
+      if (nextPaused) {
+        if (comboTimeoutRef.current) {
+          clearTimeout(comboTimeoutRef.current);
+          comboTimeoutRef.current = null;
+        }
+        comboRef.current = 0;
+        setCombo(0);
+      }
+      return nextPaused;
+    });
   }, []);
 
   // Advance to next level

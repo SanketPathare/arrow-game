@@ -1,14 +1,14 @@
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   Animated,
   useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GameEngine } from 'react-native-game-engine';
 import { Arrow } from './Arrow.js';
+import { ThreeDText } from './ThreeDText.js';
 import { EffectsManager, EffectsOverlayRenderer } from '../engine/GameEffects.js';
 
 export const GameBoard = React.memo(function GameBoard({
@@ -41,20 +41,65 @@ export const GameBoard = React.memo(function GameBoard({
   // Effects manager for 2D particles, shockwaves, and animations
   const effectsManagerRef = useRef(new EffectsManager());
   const engineRef = useRef(null);
-  const comboAnim = useRef(new Animated.Value(0)).current;
+  const [displayedCombo, setDisplayedCombo] = useState(0);
+  const [isShowingCombo, setIsShowingCombo] = useState(false);
+  const comboScaleAnim = useRef(new Animated.Value(0)).current;
+  const comboFloatAnim = useRef(new Animated.Value(0)).current;
+  const comboOpacityAnim = useRef(new Animated.Value(0)).current;
+  const fadeTimeoutRef = useRef(null);
 
-  // Animate combo banner popup when combo increases
+  // Elastic pop & upward floating motion effect when rapid succession combo triggers
   useEffect(() => {
     if (combo >= 2) {
-      comboAnim.setValue(0);
-      Animated.spring(comboAnim, {
-        toValue: 1,
-        speed: 28,
-        bounciness: 14,
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+      setDisplayedCombo(combo);
+      setIsShowingCombo(true);
+      comboScaleAnim.setValue(0.35);
+      comboFloatAnim.setValue(0);
+      comboOpacityAnim.setValue(1);
+
+      Animated.parallel([
+        // Energetic spring pop
+        Animated.spring(comboScaleAnim, {
+          toValue: 1,
+          friction: 4,
+          tension: 140,
+          useNativeDriver: true,
+        }),
+        // Upward floating glide motion
+        Animated.timing(comboFloatAnim, {
+          toValue: 1,
+          duration: 750,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Graceful dissipation fade after 1.4s (within the rapid succession window)
+      fadeTimeoutRef.current = setTimeout(() => {
+        Animated.timing(comboOpacityAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }).start(() => {
+          setIsShowingCombo(false);
+        });
+      }, 1400);
+    } else {
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+      // Smoothly dissolve out when combo drops below 2
+      Animated.timing(comboOpacityAnim, {
+        toValue: 0,
+        duration: 200,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        setIsShowingCombo(false);
+      });
     }
-  }, [combo, comboAnim]);
+
+    return () => {
+      if (fadeTimeoutRef.current) clearTimeout(fadeTimeoutRef.current);
+    };
+  }, [combo, comboScaleAnim, comboFloatAnim, comboOpacityAnim]);
 
   // Generate grid background cells
   const gridCells = useMemo(() => {
@@ -118,18 +163,25 @@ export const GameBoard = React.memo(function GameBoard({
 
   return (
     <View style={[styles.outerContainer, isShort && { marginVertical: 3 }]}>
-      {/* Dynamic Floating Combo Streak Banner */}
-      {combo >= 2 && (
+      {/* Floating 3D Combo Streak Text (Only displays on rapid succession multi-clicks) */}
+      {isShowingCombo && displayedCombo >= 2 && (
         <Animated.View
           style={[
             styles.comboFloater,
             {
+              opacity: comboOpacityAnim,
               transform: [
-                { scale: comboAnim },
+                { scale: comboScaleAnim },
                 {
-                  translateY: comboAnim.interpolate({
+                  translateY: comboFloatAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [6, -14],
+                    outputRange: [14, -26],
+                  }),
+                },
+                {
+                  rotate: comboFloatAnim.interpolate({
+                    inputRange: [0, 0.45, 1],
+                    outputRange: ['-5deg', '3deg', '0deg'],
                   }),
                 },
               ],
@@ -137,22 +189,33 @@ export const GameBoard = React.memo(function GameBoard({
           ]}
           pointerEvents="none"
         >
-          <LinearGradient
-            colors={
-              combo >= 5
-                ? ['#F43F5E', '#BE123C']
-                : combo >= 3
-                ? ['#F59E0B', '#D97706']
-                : ['#06B6D4', '#0891B2']
+          <ThreeDText
+            text={
+              displayedCombo >= 5
+                ? `🔥 ULTRA COMBO x${displayedCombo}!`
+                : displayedCombo >= 4
+                ? `⚡ MEGA COMBO x${displayedCombo}!`
+                : displayedCombo === 3
+                ? `✨ SUPER COMBO x${displayedCombo}!`
+                : `COMBO x${displayedCombo}!`
             }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.comboFloaterGradient}
-          >
-            <Text style={styles.comboFloaterText}>
-              {combo >= 5 ? '🔥 ULTRA ' : combo >= 3 ? '⚡ SUPER ' : '✨ '}COMBO x{combo}!
-            </Text>
-          </LinearGradient>
+            size={isNarrow ? 19 : isShort ? 21 : 24}
+            color={displayedCombo >= 5 ? '#FFF1F2' : displayedCombo >= 3 ? '#FFFBEB' : '#F0F9FF'}
+            depthColor={displayedCombo >= 5 ? '#BE123C' : displayedCombo >= 3 ? '#D97706' : '#0284C7'}
+            strokeColor={displayedCombo >= 5 ? '#4C0519' : displayedCombo >= 3 ? '#78350F' : '#082F49'}
+            depth={3}
+            textStyle={[
+              styles.comboText,
+              {
+                textShadowColor:
+                  displayedCombo >= 5
+                    ? 'rgba(255, 42, 109, 0.85)'
+                    : displayedCombo >= 3
+                    ? 'rgba(245, 158, 11, 0.85)'
+                    : 'rgba(56, 189, 248, 0.85)',
+              },
+            ]}
+          />
         </Animated.View>
       )}
 
@@ -400,26 +463,16 @@ const styles = StyleSheet.create({
   },
   comboFloater: {
     position: 'absolute',
-    top: -12,
-    zIndex: 50,
-    borderRadius: 20,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 6,
+    top: -46,
+    zIndex: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
   },
-  comboFloaterGradient: {
-    paddingHorizontal: 16,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  comboFloaterText: {
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+  comboText: {
+    fontStyle: 'italic',
+    letterSpacing: 2,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
 });
