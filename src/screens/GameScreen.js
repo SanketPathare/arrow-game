@@ -12,6 +12,7 @@ import { SvgHeart } from '../components/SvgIcons.js';
 import { GameBoard } from '../components/GameBoard.js';
 import { PauseModal } from '../components/PauseModal.js';
 import { LevelCompleteModal } from '../components/LevelCompleteModal.js';
+import { GameOverModal } from '../components/GameOverModal.js';
 import { getZoneByLevel } from '../utils/zones.js';
 
 export function GameScreen({
@@ -34,6 +35,7 @@ export function GameScreen({
     timer,
     isPaused,
     isCompleted,
+    isGameOver,
     stars,
     blockedArrowId,
     blockingArrowId,
@@ -64,7 +66,7 @@ export function GameScreen({
   // Handle hardware Android back button
   useEffect(() => {
     const onBackPress = () => {
-      if (isCompleted) {
+      if (isGameOver || isCompleted) {
         onNavigateLevelSelect();
         return true;
       }
@@ -74,7 +76,7 @@ export function GameScreen({
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
     return () => subscription.remove();
-  }, [isCompleted, togglePause, onNavigateLevelSelect]);
+  }, [isGameOver, isCompleted, togglePause, onNavigateLevelSelect]);
 
   if (!levelData) {
     return <View style={styles.emptyContainer} />;
@@ -237,19 +239,18 @@ export function GameScreen({
           theme={theme}
         />
 
-        {/* Out of Lives (3 Mistakes) Defeat Notification */}
-        {lives === 0 && (
-          <View style={styles.defeatBanner} pointerEvents="none">
-            <ThreeDText
-              text="💔 OUT OF LIVES! RESTARTING..."
-              size={isNarrow ? 15 : 18}
-              color="#FFE4E6"
-              depthColor="#BE123C"
-              depth={3}
-              strokeColor="#4C0519"
-            />
-          </View>
-        )}
+        {/* Sleek, Cinematic Game Over Modal */}
+        <GameOverModal
+          visible={isGameOver}
+          levelNumber={levelNumber}
+          isDaily={isDaily}
+          isBlitz={isBlitz}
+          moves={moves}
+          time={timer}
+          onRestart={handleRestart}
+          onLevelSelect={onNavigateLevelSelect}
+          onHome={onNavigateHome}
+        />
       </View>
     </GameBackground>
   );
@@ -304,23 +305,6 @@ const styles = StyleSheet.create({
   heartDepleted: {
     opacity: 0.38,
     transform: [{ scale: 0.88 }],
-  },
-  defeatBanner: {
-    position: 'absolute',
-    top: '46%',
-    alignSelf: 'center',
-    zIndex: 100,
-    backgroundColor: 'rgba(15, 23, 42, 0.94)',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: '#F43F5E',
-    shadowColor: '#F43F5E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.75,
-    shadowRadius: 10,
-    elevation: 12,
   },
   boardContainer: {
     flex: 1,

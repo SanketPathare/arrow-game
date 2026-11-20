@@ -31,6 +31,7 @@ export function useGame() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
   const [stars, setStars] = useState(0);
 
   const [blockedArrowId, setBlockedArrowId] = useState(null);
@@ -78,7 +79,7 @@ export function useGame() {
 
   // Standard timer interval (for Campaign & Daily)
   useEffect(() => {
-    if (isPlaying && !isPaused && !isCompleted && !isBlitz) {
+    if (isPlaying && !isPaused && !isCompleted && !isGameOver && !isBlitz) {
       timerRef.current = setInterval(() => {
         setTimer((t) => t + 1);
       }, 1000);
@@ -88,7 +89,7 @@ export function useGame() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, isPaused, isCompleted, isBlitz]);
+  }, [isPlaying, isPaused, isCompleted, isGameOver, isBlitz]);
 
   // Blitz countdown timer interval
   useEffect(() => {
@@ -169,6 +170,7 @@ export function useGame() {
     setIsPlaying(true);
     setIsPaused(false);
     setIsCompleted(false);
+    setIsGameOver(false);
     setStars(0);
     setBlockedArrowId(null);
     setBlockingArrowId(null);
@@ -217,6 +219,7 @@ export function useGame() {
     setIsPlaying(true);
     setIsPaused(false);
     setIsCompleted(false);
+    setIsGameOver(false);
     setStars(0);
     setBlockedArrowId(null);
     setBlockingArrowId(null);
@@ -260,6 +263,7 @@ export function useGame() {
       setIsPlaying(true);
       setIsPaused(false);
       setIsCompleted(false);
+      setIsGameOver(false);
       setStars(0);
       setBlockedArrowId(null);
       setBlockingArrowId(null);
@@ -270,7 +274,7 @@ export function useGame() {
   // Handle arrow tap
   const handleArrowPress = useCallback(
     (arrowId) => {
-      if (isCompleted || isPaused || resolvingRef.current || exitingArrowIds.has(arrowId)) return;
+      if (isCompleted || isPaused || isGameOver || resolvingRef.current || exitingArrowIds.has(arrowId)) return;
 
       // Clear any active hint
       if (hintArrowId) setHintArrowId(null);
@@ -304,14 +308,17 @@ export function useGame() {
         livesRef.current = nextLives;
         setLives(nextLives);
 
-        // If player makes three mistakes (0 lives), automatically restart the game
+        // If player makes three mistakes (0 lives), trigger cinematic Game Over screen
         if (nextLives === 0) {
-          resolvingRef.current = true;
+          resolvingRef.current = false;
+          setIsPlaying(false);
+          setIsGameOver(true);
           soundManager.playDefeatSound();
-          if (autoRestartTimerRef.current) clearTimeout(autoRestartTimerRef.current);
-          autoRestartTimerRef.current = setTimeout(() => {
-            handleRestart();
-          }, 850);
+          if (autoRestartTimerRef.current) {
+            clearTimeout(autoRestartTimerRef.current);
+            autoRestartTimerRef.current = null;
+          }
+          return;
         }
 
         // Reset shake after animation duration
@@ -434,6 +441,7 @@ export function useGame() {
     [
       isCompleted,
       isPaused,
+      isGameOver,
       exitingArrowIds,
       hintArrowId,
       activeArrows,
@@ -446,7 +454,6 @@ export function useGame() {
       combo,
       isBlitz,
       blitzBoardsCleared,
-      handleRestart,
     ]
   );
 
@@ -542,6 +549,8 @@ export function useGame() {
     isPlaying,
     isPaused,
     isCompleted,
+    isGameOver,
+    setIsGameOver,
     stars,
     blockedArrowId,
     blockingArrowId,
