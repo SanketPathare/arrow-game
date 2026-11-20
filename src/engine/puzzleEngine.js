@@ -43,10 +43,13 @@ export function validatePuzzle(boardSize, arrows) {
  * @returns {number} 1, 2, or 3 stars
  */
 export function calculateStars(moves, arrowCount, timeSeconds) {
+  // Flawless play (0 mistakes) earns 3 stars
   if (moves <= arrowCount) {
     return 3;
   }
-  if (moves <= arrowCount + 2) {
+  // Up to ~8% mistake margin for 2 stars
+  const allowedMistakes = Math.max(2, Math.floor(arrowCount * 0.08));
+  if (moves <= arrowCount + allowedMistakes) {
     return 2;
   }
   return 1;

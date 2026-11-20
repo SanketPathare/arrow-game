@@ -194,7 +194,7 @@ export function HomeScreen({
   }, [unlockedLevel]);
 
   const currentLevelData = useMemo(() => {
-    return getLevelData(unlockedLevel) || { boardSize: 4, arrowCount: 6, difficulty: 'BEGINNER' };
+    return getLevelData(unlockedLevel) || { boardSize: 4, arrowCount: 16, difficulty: 'BEGINNER' };
   }, [unlockedLevel]);
 
   const currentLevelStats = levelStats[unlockedLevel] || {};

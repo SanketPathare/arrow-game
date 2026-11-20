@@ -43,13 +43,8 @@ export function useGame() {
   const hintTimeoutRef = useRef(null);
   const comboTimeoutRef = useRef(null);
   const comboRef = useRef(0);
-  const comboTimeoutRef = useRef(null);
-  const comboRef = useRef(0);
   const resolvingRef = useRef(false);
   const gameSessionRef = useRef(0);
-
-  // 1.6s rapid succession window - delay beyond this resets combo to 0
-  const COMBO_WINDOW_MS = 1600;
 
   // 1.6s rapid succession window - delay beyond this resets combo to 0
   const COMBO_WINDOW_MS = 1600;
@@ -176,8 +171,8 @@ export function useGame() {
     comboRef.current = 0;
     resolvingRef.current = false;
 
-    // Initial 4x4 fast puzzle
-    const puzzle = generatePuzzle(4, 6, Date.now());
+    // Initial 4x4 fast puzzle (all 16 cells filled)
+    const puzzle = generatePuzzle(4, 16, Date.now());
     setIsBlitz(true);
     setIsDaily(false);
     setDailyDate('');
@@ -232,6 +227,9 @@ export function useGame() {
         soundManager.playBlockedSound();
         setBlockedArrowId(arrow.id);
         if (blockingArrow) setBlockingArrowId(blockingArrow.id);
+
+        // Blocked tap counts as a move / mistake, increasing challenge for 3-star mastery
+        setMoves((m) => m + 1);
 
         // Reset shake after animation duration
         if (blockedTimeoutRef.current) clearTimeout(blockedTimeoutRef.current);
@@ -313,9 +311,9 @@ export function useGame() {
             setBlitzTimeRemaining((prev) => Math.min(99, prev + 5));
             soundManager.playVictorySound();
 
-            // Next procedural board
+            // Next procedural complete board
             const nextSize = nextCleared < 3 ? 4 : nextCleared < 6 ? 5 : 6;
-            const nextArrowCount = Math.min(nextSize * nextSize - 2, 4 + nextCleared * 2);
+            const nextArrowCount = nextSize * nextSize;
             const nextPuzzle = generatePuzzle(nextSize, nextArrowCount, Date.now() + nextCleared);
 
             setLevelData(nextPuzzle);
