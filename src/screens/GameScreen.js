@@ -8,9 +8,7 @@ import {
 import { GameBackground } from '../components/GameBackground.js';
 import { ThreeDButton } from '../components/ThreeDButton.js';
 import { ThreeDText } from '../components/ThreeDText.js';
-import { TactilePill } from '../components/TactilePill.js';
 import { SvgHeart } from '../components/SvgIcons.js';
-import { GameStatsHud } from '../components/GameStatsHud.js';
 import { GameBoard } from '../components/GameBoard.js';
 import { PauseModal } from '../components/PauseModal.js';
 import { LevelCompleteModal } from '../components/LevelCompleteModal.js';
@@ -46,7 +44,6 @@ export function GameScreen({
     hintsRemaining = 2,
     isBlitz,
     blitzScore,
-    blitzTimeRemaining,
     blitzBoardsCleared,
     handleArrowPress,
     handleHint,
@@ -84,8 +81,6 @@ export function GameScreen({
   }
 
   const zoneConfig = getZoneByLevel(levelNumber);
-  const remainingCount = activeArrows.length;
-  const totalCount = levelData.arrowCount;
 
   return (
     <GameBackground type="game" zone={zoneConfig.id} theme={theme}>
@@ -95,7 +90,7 @@ export function GameScreen({
           isShort && { paddingVertical: 2 },
         ]}
       >
-        {/* Top Header Section (Matching Reference Image 2) */}
+        {/* Top Header Section */}
         <View style={[styles.header, isNarrow && { paddingHorizontal: 10, paddingTop: 2 }]}>
           {/* Circular 3D Back Button */}
           <ThreeDButton
@@ -112,7 +107,7 @@ export function GameScreen({
             }}
           />
 
-          {/* Center Title, Difficulty Badge & 3-Heart Lives Display */}
+          {/* Center Title & 3-Heart Lives Display */}
           <View style={styles.titleColumn}>
             <ThreeDText
               text={isBlitz ? 'BLITZ RUSH' : isDaily ? 'DAILY CHALLENGE' : `LEVEL ${levelNumber}`}
@@ -122,30 +117,23 @@ export function GameScreen({
               depth={isNarrow ? 4 : 5}
               strokeColor="#6E3D00"
             />
-            <View style={styles.badgeAndLivesRow}>
-              <TactilePill
-                type="difficulty"
-                sizeText={isBlitz ? `SOLVED: ${blitzBoardsCleared}` : `${levelData.boardSize}X${levelData.boardSize}`}
-                difficulty={isBlitz ? '60S ATTACK' : levelData.difficulty}
-              />
 
-              {/* 3-Heart Lives Indicator at top of screen */}
-              <View style={styles.livesPill}>
-                {[1, 2, 3].map((heartIndex) => (
-                  <View
-                    key={heartIndex}
-                    style={[
-                      styles.heartSlot,
-                      lives < heartIndex && styles.heartDepleted,
-                    ]}
-                  >
-                    <SvgHeart
-                      size={isNarrow ? 15 : 18}
-                      filled={lives >= heartIndex}
-                    />
-                  </View>
-                ))}
-              </View>
+            {/* 3-Heart Lives Indicator at top of screen */}
+            <View style={styles.livesPill}>
+              {[1, 2, 3].map((heartIndex) => (
+                <View
+                  key={heartIndex}
+                  style={[
+                    styles.heartSlot,
+                    lives < heartIndex && styles.heartDepleted,
+                  ]}
+                >
+                  <SvgHeart
+                    size={isNarrow ? 15 : 18}
+                    filled={lives >= heartIndex}
+                  />
+                </View>
+              ))}
             </View>
           </View>
 
@@ -158,17 +146,6 @@ export function GameScreen({
             onPress={togglePause}
           />
         </View>
-
-        {/* Wooden Statistics HUD Panel (Matching Reference Image 2) */}
-        <GameStatsHud
-          moves={moves}
-          timer={timer}
-          remaining={remainingCount}
-          total={totalCount}
-          isBlitz={isBlitz}
-          blitzScore={blitzScore}
-          blitzTimeRemaining={blitzTimeRemaining}
-        />
 
         {/* Centered 3D Stone Puzzle Board */}
         <View style={styles.boardContainer}>
@@ -302,24 +279,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeAndLivesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 3,
-  },
   livesPill: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(15, 23, 42, 0.78)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: 'rgba(255, 77, 109, 0.35)',
-    gap: 4,
+    gap: 5,
+    marginTop: 5,
     shadowColor: '#FF2A6D',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
