@@ -15,31 +15,36 @@ function createPRNG(seed) {
 /**
  * Checks if a ray from (row, col) in direction `dir` to the board edge is free of arrows.
  */
-function isRayClear(row, col, dir, boardSize, arrows) {
+function isRayClear(row, col, dir, boardSize, occupancyGrid) {
   if (dir === DIRECTIONS.UP) {
     for (let r = row - 1; r >= 0; r--) {
-      if (arrows.some((a) => a.row === r && a.col === col)) return false;
+      if (occupancyGrid[r][col]) return false;
     }
   } else if (dir === DIRECTIONS.DOWN) {
     for (let r = row + 1; r < boardSize; r++) {
-      if (arrows.some((a) => a.row === r && a.col === col)) return false;
+      if (occupancyGrid[r][col]) return false;
     }
   } else if (dir === DIRECTIONS.LEFT) {
     for (let c = col - 1; c >= 0; c--) {
-      if (arrows.some((a) => a.row === row && a.col === c)) return false;
+      if (occupancyGrid[row][c]) return false;
     }
   } else if (dir === DIRECTIONS.RIGHT) {
     for (let c = col + 1; c < boardSize; c++) {
-      if (arrows.some((a) => a.row === row && a.col === c)) return false;
+      if (occupancyGrid[row][c]) return false;
     }
   }
   return true;
 }
 
 function getEscapableCount(boardSize, arrows) {
+  const occupancyGrid = Array.from({ length: boardSize }, () => Array(boardSize).fill(false));
+  for (const arrow of arrows) {
+    occupancyGrid[arrow.row][arrow.col] = true;
+  }
+
   let count = 0;
   for (const a of arrows) {
-    if (isRayClear(a.row, a.col, a.dir, boardSize, arrows)) {
+    if (isRayClear(a.row, a.col, a.dir, boardSize, occupancyGrid)) {
       count++;
     }
   }
@@ -77,6 +82,7 @@ export function generatePuzzle(boardSize, targetArrowCount = null, seed = 12345)
     const arrows = [];
     const allDirs = [DIRECTIONS.UP, DIRECTIONS.DOWN, DIRECTIONS.LEFT, DIRECTIONS.RIGHT];
     const emptyCells = [];
+    const occupancyGrid = Array.from({ length: boardSize }, () => Array(boardSize).fill(false));
 
     for (let r = 0; r < boardSize; r++) {
       for (let c = 0; c < boardSize; c++) {
@@ -93,7 +99,7 @@ export function generatePuzzle(boardSize, targetArrowCount = null, seed = 12345)
         const cell = emptyCells[i];
         const validDirs = [];
         for (const dir of allDirs) {
-          if (isRayClear(cell.row, cell.col, dir, boardSize, arrows)) {
+          if (isRayClear(cell.row, cell.col, dir, boardSize, occupancyGrid)) {
             validDirs.push(dir);
           }
         }
@@ -123,6 +129,7 @@ export function generatePuzzle(boardSize, targetArrowCount = null, seed = 12345)
         dir: chosenDir,
       });
 
+      occupancyGrid[chosen.row][chosen.col] = true;
       emptyCells.splice(chosen.cellIndex, 1);
     }
 

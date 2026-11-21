@@ -15,7 +15,6 @@ export function useGame() {
   // Blitz Rush mode state
   const [isBlitz, setIsBlitz] = useState(false);
   const [blitzScore, setBlitzScore] = useState(0);
-  const [blitzTimeRemaining, setBlitzTimeRemaining] = useState(60);
   const [blitzBoardsCleared, setBlitzBoardsCleared] = useState(0);
 
   // Tactical features: Combo
@@ -27,7 +26,6 @@ export function useGame() {
   const [undoStack, setUndoStack] = useState([]);
 
   const [moves, setMoves] = useState(0);
-  const [timer, setTimer] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -47,6 +45,8 @@ export function useGame() {
   const hintsRemainingRef = useRef(2);
 
   const timerRef = useRef(null);
+  const elapsedTimeRef = useRef(0);
+  const blitzTimeRef = useRef(60);
   const resolutionTimerRef = useRef(null);
   const blockedTimeoutRef = useRef(null);
   const hintTimeoutRef = useRef(null);
@@ -81,7 +81,7 @@ export function useGame() {
   useEffect(() => {
     if (isPlaying && !isPaused && !isCompleted && !isGameOver && !isBlitz) {
       timerRef.current = setInterval(() => {
-        setTimer((t) => t + 1);
+        elapsedTimeRef.current += 1;
       }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -96,21 +96,19 @@ export function useGame() {
     let blitzInterval = null;
     if (isPlaying && !isPaused && !isCompleted && isBlitz) {
       blitzInterval = setInterval(() => {
-        setBlitzTimeRemaining((prev) => {
-          if (prev <= 1) {
-            clearInterval(blitzInterval);
-            setIsPlaying(false);
-            setIsCompleted(true);
-            soundManager.playVictorySound();
-            StorageService.saveBlitzResult(
-              blitzScoreRef.current,
-              blitzBoardsClearedRef.current,
-              maxComboRef.current
-            );
-            return 0;
-          }
-          return prev - 1;
-        });
+        const remaining = Math.max(0, blitzTimeRef.current - 1);
+        blitzTimeRef.current = remaining;
+        if (remaining === 0) {
+          clearInterval(blitzInterval);
+          setIsPlaying(false);
+          setIsCompleted(true);
+          soundManager.playVictorySound();
+          StorageService.saveBlitzResult(
+            blitzScoreRef.current,
+            blitzBoardsClearedRef.current,
+            maxComboRef.current
+          );
+        }
       }, 1000);
     }
     return () => {
@@ -155,7 +153,7 @@ export function useGame() {
 
     setIsBlitz(false);
     setBlitzScore(0);
-    setBlitzTimeRemaining(60);
+    blitzTimeRef.current = 60;
     setBlitzBoardsCleared(0);
 
     setCombo(0);
@@ -166,7 +164,7 @@ export function useGame() {
     setExitingArrowIds(new Set());
     setUndoStack([]);
     setMoves(0);
-    setTimer(0);
+    elapsedTimeRef.current = 0;
     setIsPlaying(true);
     setIsPaused(false);
     setIsCompleted(false);
@@ -204,7 +202,7 @@ export function useGame() {
     setDailyDate('');
     setLevelNumber('Blitz');
     setBlitzScore(0);
-    setBlitzTimeRemaining(60);
+    blitzTimeRef.current = 60;
     setBlitzBoardsCleared(0);
 
     setCombo(0);
@@ -215,7 +213,7 @@ export function useGame() {
     setExitingArrowIds(new Set());
     setUndoStack([]);
     setMoves(0);
-    setTimer(0);
+    elapsedTimeRef.current = 0;
     setIsPlaying(true);
     setIsPaused(false);
     setIsCompleted(false);
@@ -257,7 +255,7 @@ export function useGame() {
       setExitingArrowIds(new Set());
       setUndoStack([]);
       setMoves(0);
-      setTimer(0);
+      elapsedTimeRef.current = 0;
       setCombo(0);
       setMaxCombo(0);
       setIsPlaying(true);
@@ -398,7 +396,8 @@ export function useGame() {
             const nextCleared = blitzBoardsCleared + 1;
             setBlitzBoardsCleared(nextCleared);
             setBlitzScore((s) => s + 500 + nextCombo * 50);
-            setBlitzTimeRemaining((prev) => Math.min(99, prev + 5));
+            const nextBlitzTime = Math.min(99, blitzTimeRef.current + 5);
+            blitzTimeRef.current = nextBlitzTime;
             soundManager.playVictorySound();
 
             // Next procedural complete board
@@ -415,12 +414,13 @@ export function useGame() {
 
           // Standard Campaign / Daily Completion
           const finalMoves = moves + 1;
-          const earnedStars = calculateStars(finalMoves, levelData.arrowCount, timer);
+          const elapsedTime = elapsedTimeRef.current;
+          const earnedStars = calculateStars(finalMoves, levelData.arrowCount, elapsedTime);
           setIsPlaying(false);
           setStars(earnedStars);
 
           if (!isDaily && typeof levelNumber === 'number') {
-            await StorageService.saveLevelResult(levelNumber, earnedStars, finalMoves, timer);
+            await StorageService.saveLevelResult(levelNumber, earnedStars, finalMoves, elapsedTime);
           } else if (isDaily && dailyDate) {
             await StorageService.recordDailyCompletion(dailyDate);
           }
@@ -447,7 +447,6 @@ export function useGame() {
       activeArrows,
       levelData,
       moves,
-      timer,
       isDaily,
       dailyDate,
       levelNumber,
@@ -545,7 +544,7 @@ export function useGame() {
     activeArrows,
     exitingArrowIds,
     moves,
-    timer,
+    timer: elapsedTimeRef.current,
     isPlaying,
     isPaused,
     isCompleted,
@@ -562,7 +561,7 @@ export function useGame() {
     hintsRemaining,
     isBlitz,
     blitzScore,
-    blitzTimeRemaining,
+    blitzTimeRemaining: blitzTimeRef.current,
     blitzBoardsCleared,
     loadBlitz,
     loadLevel,

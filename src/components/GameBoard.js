@@ -11,6 +11,14 @@ import { Arrow } from './Arrow.js';
 import { ThreeDText } from './ThreeDText.js';
 import { EffectsManager, EffectsOverlayRenderer } from '../engine/GameEffects.js';
 
+function updateEffectsSystem(entities, { time }) {
+  const effects = entities.effects?.effects;
+  if (effects) effects.update(time.delta || 16.6);
+  return entities;
+}
+
+const EFFECT_SYSTEMS = [updateEffectsSystem];
+
 export const GameBoard = React.memo(function GameBoard({
   boardSize = 4,
   activeArrows = [],
@@ -137,14 +145,6 @@ export const GameBoard = React.memo(function GameBoard({
       });
     }
   }, [exitingArrowIds, activeArrows, cellSize]);
-
-  // GameEngine ECS System: updates particles & visual effects every 60fps tick
-  const EffectsSystem = (entities, { time }) => {
-    if (effectsManagerRef.current) {
-      effectsManagerRef.current.update(time.delta || 16.6);
-    }
-    return entities;
-  };
 
   // GameEngine entities configuration
   const entities = useMemo(
@@ -364,7 +364,7 @@ export const GameBoard = React.memo(function GameBoard({
           <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.gameEngineOverlay]}>
             <GameEngine
               ref={engineRef}
-              systems={[EffectsSystem]}
+              systems={EFFECT_SYSTEMS}
               entities={entities}
               style={StyleSheet.absoluteFill}
             />

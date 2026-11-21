@@ -1,5 +1,45 @@
 import { DIRECTIONS } from '../utils/constants.js';
 
+const DIRECTION_STEPS = {
+  [DIRECTIONS.UP]: [-1, 0],
+  [DIRECTIONS.DOWN]: [1, 0],
+  [DIRECTIONS.LEFT]: [0, -1],
+  [DIRECTIONS.RIGHT]: [0, 1],
+};
+
+function createOccupancyGrid(activeArrows, boardSize, excludedId) {
+  const grid = Array.from({ length: boardSize }, () => Array(boardSize).fill(null));
+  for (const arrow of activeArrows) {
+    if (
+      arrow.id !== excludedId &&
+      arrow.row >= 0 &&
+      arrow.row < boardSize &&
+      arrow.col >= 0 &&
+      arrow.col < boardSize &&
+      grid[arrow.row][arrow.col] === null
+    ) {
+      grid[arrow.row][arrow.col] = arrow;
+    }
+  }
+  return grid;
+}
+
+function findBlockingArrow(arrow, occupancyGrid, boardSize, pathCells) {
+  const step = DIRECTION_STEPS[arrow.dir];
+  if (!step) return null;
+
+  let row = arrow.row + step[0];
+  let col = arrow.col + step[1];
+  while (row >= 0 && row < boardSize && col >= 0 && col < boardSize) {
+    if (pathCells) pathCells.push({ row, col });
+    const blocker = occupancyGrid[row][col];
+    if (blocker && blocker.id !== arrow.id) return blocker;
+    row += step[0];
+    col += step[1];
+  }
+  return null;
+}
+
 /**
  * Checks if a specific arrow has a clear path to exit the board in its pointing direction.
  * @param {Object} arrow - { id, row, col, dir }
@@ -12,54 +52,10 @@ export function checkArrowMove(arrow, activeArrows, boardSize) {
     return { canEscape: false, blockingArrow: null, pathCells: [] };
   }
 
-  const { row, col, dir, id } = arrow;
+  const { id } = arrow;
   const pathCells = [];
-  let blockingArrow = null;
-
-  // Find all other arrows on the board
-  const otherArrows = activeArrows.filter((a) => a.id !== id);
-
-  if (dir === DIRECTIONS.UP) {
-    // Moves row - 1 down to 0
-    for (let r = row - 1; r >= 0; r--) {
-      pathCells.push({ row: r, col });
-      const blocker = otherArrows.find((a) => a.row === r && a.col === col);
-      if (blocker) {
-        blockingArrow = blocker;
-        break; // Stop at first obstacle
-      }
-    }
-  } else if (dir === DIRECTIONS.DOWN) {
-    // Moves row + 1 up to boardSize - 1
-    for (let r = row + 1; r < boardSize; r++) {
-      pathCells.push({ row: r, col });
-      const blocker = otherArrows.find((a) => a.row === r && a.col === col);
-      if (blocker) {
-        blockingArrow = blocker;
-        break;
-      }
-    }
-  } else if (dir === DIRECTIONS.LEFT) {
-    // Moves col - 1 down to 0
-    for (let c = col - 1; c >= 0; c--) {
-      pathCells.push({ row, col: c });
-      const blocker = otherArrows.find((a) => a.row === row && a.col === c);
-      if (blocker) {
-        blockingArrow = blocker;
-        break;
-      }
-    }
-  } else if (dir === DIRECTIONS.RIGHT) {
-    // Moves col + 1 up to boardSize - 1
-    for (let c = col + 1; c < boardSize; c++) {
-      pathCells.push({ row, col: c });
-      const blocker = otherArrows.find((a) => a.row === row && a.col === c);
-      if (blocker) {
-        blockingArrow = blocker;
-        break;
-      }
-    }
-  }
+  const occupancyGrid = createOccupancyGrid(activeArrows, boardSize, id);
+  const blockingArrow = findBlockingArrow(arrow, occupancyGrid, boardSize, pathCells);
 
   return {
     canEscape: blockingArrow === null,
@@ -76,10 +72,10 @@ export function checkArrowMove(arrow, activeArrows, boardSize) {
  */
 export function getEscapableArrows(activeArrows, boardSize) {
   if (!activeArrows || activeArrows.length === 0) return [];
-  return activeArrows.filter((arrow) => {
-    const { canEscape } = checkArrowMove(arrow, activeArrows, boardSize);
-    return canEscape;
-  });
+  const occupancyGrid = createOccupancyGrid(activeArrows, boardSize);
+  return activeArrows.filter(
+    (arrow) => !findBlockingArrow(arrow, occupancyGrid, boardSize)
+  );
 }
 
 /**
@@ -98,9 +94,16 @@ export function getBestHintArrow(activeArrows, boardSize) {
   let maxFreed = -1;
 
   for (const arrow of escapable) {
-    const remainingAfter = activeArrows.filter((a) => a.id !== arrow.id);
-    const escapableAfter = getEscapableArrows(remainingAfter, boardSize);
-    const freedCount = escapableAfter.length;
+    const remainingGrid = createOccupancyGrid(activeArrows, boardSize, arrow.id);
+    let freedCount = 0;
+    for (const remainingArrow of activeArrows) {
+      if (
+        remainingArrow.id !== arrow.id &&
+        !findBlockingArrow(remainingArrow, remainingGrid, boardSize)
+      ) {
+        freedCount += 1;
+      }
+    }
 
     if (freedCount > maxFreed) {
       maxFreed = freedCount;
