@@ -322,14 +322,30 @@ export function SvgStar({
   empty = false,
   color = '#FFD13B',
 }) {
-  if (empty) {
+  const isActuallyEmpty = empty || color === '#475569' || color === '#64748B' || color === '#334155';
+
+  if (isActuallyEmpty) {
     return (
       <Svg width={size} height={size} viewBox="0 0 100 100">
         <Path
           d="M 50,8 L 63,35 L 94,38 L 71,59 L 77,89 L 50,74 L 23,89 L 29,59 L 6,38 L 37,35 Z"
-          fill="#1E293B"
-          stroke="#334155"
+          fill="rgba(30, 41, 59, 0.75)"
+          stroke={color === '#FFD13B' ? '#475569' : color}
           strokeWidth="6"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    );
+  }
+
+  if (color === '#FFFFFF') {
+    return (
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        <Path
+          d="M 50,8 L 63,35 L 94,38 L 71,59 L 77,89 L 50,74 L 23,89 L 29,59 L 6,38 L 37,35 Z"
+          fill="#FFFFFF"
+          stroke="rgba(255, 255, 255, 0.4)"
+          strokeWidth="4"
           strokeLinejoin="round"
         />
       </Svg>

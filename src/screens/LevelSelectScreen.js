@@ -93,12 +93,13 @@ export function LevelSelectScreen({
     };
   }, [pulseAnim, bounceAnim]);
 
-  // Compute total stars
+  // Compute total stars across campaign levels 1..50
   const totalStars = useMemo(() => {
-    return Object.values(levelStats).reduce(
-      (acc, curr) => acc + (curr?.stars || 0),
-      0
-    );
+    let sum = 0;
+    for (let i = 1; i <= 50; i++) {
+      sum += levelStats[i]?.stars || 0;
+    }
+    return sum;
   }, [levelStats]);
 
   // Road geometry calculation
@@ -425,6 +426,14 @@ export function LevelSelectScreen({
 
                 {/* 3D Circular Level Stone Button */}
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Level ${levelNumber}${
+                    isCompleted
+                      ? `, completed with ${starsEarned} of 3 stars`
+                      : isUnlocked
+                      ? ', unlocked'
+                      : ', locked'
+                  }`}
                   onPress={() => {
                     if (isUnlocked) {
                       soundManager.playClickSound();
@@ -487,11 +496,23 @@ export function LevelSelectScreen({
                 {/* 3-Star Rating Cluster Under Completed Nodes */}
                 {isCompleted && (
                   <View style={styles.starsCluster}>
-                    <SvgStar size={13} color={starsEarned >= 1 ? '#FFD13B' : '#475569'} />
+                    <SvgStar
+                      size={13}
+                      empty={starsEarned < 1}
+                      color={starsEarned >= 1 ? '#FFD13B' : '#475569'}
+                    />
                     <View style={{ marginTop: -4 }}>
-                      <SvgStar size={15} color={starsEarned >= 2 ? '#FFD13B' : '#475569'} />
+                      <SvgStar
+                        size={15}
+                        empty={starsEarned < 2}
+                        color={starsEarned >= 2 ? '#FFD13B' : '#475569'}
+                      />
                     </View>
-                    <SvgStar size={13} color={starsEarned >= 3 ? '#FFD13B' : '#475569'} />
+                    <SvgStar
+                      size={13}
+                      empty={starsEarned < 3}
+                      color={starsEarned >= 3 ? '#FFD13B' : '#475569'}
+                    />
                   </View>
                 )}
               </View>
