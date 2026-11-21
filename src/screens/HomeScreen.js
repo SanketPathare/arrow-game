@@ -178,18 +178,24 @@ export function HomeScreen({
   }, [todayStr]);
 
   // Compute game statistics
-  const completedLevels = useMemo(
-    () => Object.keys(levelStats).filter((k) => levelStats[k]?.completed).length,
-    [levelStats]
-  );
-  const totalStars = useMemo(
-    () => Object.values(levelStats).reduce((acc, curr) => acc + (curr?.stars || 0), 0),
-    [levelStats]
-  );
-  const threeStarCount = useMemo(
-    () => Object.values(levelStats).filter((s) => (s?.stars || 0) === 3).length,
-    [levelStats]
-  );
+  const { completedLevels, totalStars, threeStarCount } = useMemo(() => {
+    let completed = 0;
+    let starsEarned = 0;
+    let perfectLevels = 0;
+
+    Object.values(levelStats).forEach((stats) => {
+      const stars = stats?.stars || 0;
+      if (stats?.completed) completed += 1;
+      starsEarned += stars;
+      if (stars === 3) perfectLevels += 1;
+    });
+
+    return {
+      completedLevels: completed,
+      totalStars: starsEarned,
+      threeStarCount: perfectLevels,
+    };
+  }, [levelStats]);
   const streak = dailyStats?.streak || 0;
 
   const rank = useMemo(() => getPlayerRank(totalStars), [totalStars]);
@@ -602,16 +608,17 @@ export function HomeScreen({
       {/* ---------------------------------------------------- */}
       {/* Player Profile Plaque                                 */}
       {/* ---------------------------------------------------- */}
-      <ThreeDModalPlaque
-        visible={showProfile}
-        onClose={() => setShowProfile(false)}
-        crestType="rules"
-        title="PLAYER PROFILE"
-        subtitle="Choose your name and avatar"
-        maxWidth={360}
-        showClose={true}
-      >
-        <View style={styles.profileForm}>
+      {showProfile && (
+        <ThreeDModalPlaque
+          visible={showProfile}
+          onClose={() => setShowProfile(false)}
+          crestType="rules"
+          title="PLAYER PROFILE"
+          subtitle="Choose your name and avatar"
+          maxWidth={360}
+          showClose={true}
+        >
+          <View style={styles.profileForm}>
           <Text style={styles.profileFieldLabel}>PLAYER NAME</Text>
           <TextInput
             value={profileDraft.name}
@@ -669,21 +676,23 @@ export function HomeScreen({
             onPress={saveProfile}
             style={styles.profileSaveButton}
           />
-        </View>
-      </ThreeDModalPlaque>
+          </View>
+        </ThreeDModalPlaque>
+      )}
 
       {/* ---------------------------------------------------- */}
       {/* Modal 1: How to Play Plaque                           */}
       {/* ---------------------------------------------------- */}
-      <ThreeDModalPlaque
-        visible={showHowToPlay}
-        onClose={() => setShowHowToPlay(false)}
-        crestType="rules"
-        title="HOW TO PLAY"
-        subtitle="Plan each move. Clear every arrow."
-        maxWidth={360}
-        showClose={true}
-      >
+      {showHowToPlay && (
+        <ThreeDModalPlaque
+          visible={showHowToPlay}
+          onClose={() => setShowHowToPlay(false)}
+          crestType="rules"
+          title="HOW TO PLAY"
+          subtitle="Plan each move. Clear every arrow."
+          maxWidth={360}
+          showClose={true}
+        >
         <View style={styles.rulesTray}>
           <View style={styles.ruleItem}>
             <LinearGradient
@@ -742,20 +751,22 @@ export function HomeScreen({
           onPress={() => setShowHowToPlay(false)}
           style={styles.modalBtn}
         />
-      </ThreeDModalPlaque>
+        </ThreeDModalPlaque>
+      )}
 
       {/* ---------------------------------------------------- */}
       {/* Modal 3: Hall of Mastery / Achievements Plaque       */}
       {/* ---------------------------------------------------- */}
-      <ThreeDModalPlaque
-        visible={showAchievements}
-        onClose={() => setShowAchievements(false)}
-        crestType="trophy"
-        title="HALL OF MASTERY"
-        subtitle={`${completedAchievementsCount} of ${ACHIEVEMENTS_DEF.length} Badges Unlocked`}
-        maxWidth={380}
-        showClose={true}
-      >
+      {showAchievements && (
+        <ThreeDModalPlaque
+          visible={showAchievements}
+          onClose={() => setShowAchievements(false)}
+          crestType="trophy"
+          title="HALL OF MASTERY"
+          subtitle={`${completedAchievementsCount} of ${ACHIEVEMENTS_DEF.length} Badges Unlocked`}
+          maxWidth={380}
+          showClose={true}
+        >
         <View style={styles.achievementsTray}>
           {ACHIEVEMENTS_DEF.map((ach) => {
             const current = ach.calcProgress(achievementStats);
@@ -824,21 +835,23 @@ export function HomeScreen({
           onPress={() => setShowAchievements(false)}
           style={styles.modalBtn}
         />
-      </ThreeDModalPlaque>
+        </ThreeDModalPlaque>
+      )}
 
       {/* ---------------------------------------------------- */}
       {/* Modal 4: Daily Tactical Supply Claim Celebration      */}
       {/* ---------------------------------------------------- */}
       {showGiftModal && <Confetti count={40} />}
-      <ThreeDModalPlaque
-        visible={showGiftModal}
-        onClose={() => setShowGiftModal(false)}
-        crestType="trophy"
-        title="SUPPLY SECURED!"
-        subtitle="Daily tactical supplies added to your vault"
-        maxWidth={360}
-        showClose={true}
-      >
+      {showGiftModal && (
+        <ThreeDModalPlaque
+          visible={showGiftModal}
+          onClose={() => setShowGiftModal(false)}
+          crestType="trophy"
+          title="SUPPLY SECURED!"
+          subtitle="Daily tactical supplies added to your vault"
+          maxWidth={360}
+          showClose={true}
+        >
         <View style={styles.giftRewardBox}>
           <LinearGradient
             colors={['rgba(245, 158, 11, 0.2)', 'rgba(217, 119, 6, 0.08)']}
@@ -859,7 +872,8 @@ export function HomeScreen({
           onPress={() => setShowGiftModal(false)}
           style={styles.modalBtn}
         />
-      </ThreeDModalPlaque>
+        </ThreeDModalPlaque>
+      )}
     </GameBackground>
   );
 }
