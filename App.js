@@ -12,7 +12,7 @@ import { LevelSelectScreen } from './src/screens/LevelSelectScreen.js';
 import { SettingsScreen } from './src/screens/SettingsScreen.js';
 import { LoadingScreen } from './src/screens/LoadingScreen.js';
 import { useGame } from './src/hooks/useGame.js';
-import { StorageService, DEFAULT_SETTINGS } from './src/utils/storage.js';
+import { StorageService, DEFAULT_PROFILE, DEFAULT_SETTINGS } from './src/utils/storage.js';
 import { THEMES } from './src/utils/constants.js';
 import { soundManager } from './src/utils/sound.js';
 
@@ -25,6 +25,7 @@ export default function App() {
   const [unlockedLevel, setUnlockedLevel] = useState(1);
   const [levelStats, setLevelStats] = useState({});
   const [dailyStats, setDailyStats] = useState({});
+  const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
   // Main game hook
@@ -50,17 +51,19 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [savedUnlocked, savedStats, savedDaily, savedSettings] = await Promise.all([
+        const [savedUnlocked, savedStats, savedDaily, savedSettings, savedProfile] = await Promise.all([
           StorageService.getUnlockedLevel(),
           StorageService.getLevelStats(),
           StorageService.getDailyStats(),
           StorageService.getSettings(),
+          StorageService.getProfile(),
         ]);
 
         setUnlockedLevel(savedUnlocked);
         setLevelStats(savedStats);
         setDailyStats(savedDaily);
         setSettings(savedSettings);
+        setProfile(savedProfile);
       } catch (e) {
         console.warn('Initialization error:', e);
       } finally {
@@ -113,6 +116,12 @@ export default function App() {
     });
   }, []);
 
+  const handleSaveProfile = useCallback(async (newProfile) => {
+    const saved = await StorageService.saveProfile(newProfile);
+    if (saved) setProfile(newProfile);
+    return saved;
+  }, []);
+
   const handleResetProgress = useCallback(async () => {
     const resetSucceeded = await StorageService.resetAllProgress();
     if (!resetSucceeded) return false;
@@ -161,6 +170,8 @@ export default function App() {
                 unlockedLevel={unlockedLevel}
                 levelStats={levelStats}
                 dailyStats={dailyStats}
+                profile={profile}
+                onSaveProfile={handleSaveProfile}
                 onPlay={handlePlayLevel}
                 onPlayBlitz={handlePlayBlitz}
                 onOpenLevelSelect={() => setCurrentScreen('levelSelect')}

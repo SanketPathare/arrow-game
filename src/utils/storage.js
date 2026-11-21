@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { STORAGE_KEYS } from './constants.js';
+import { PROFILE_AVATARS, STORAGE_KEYS } from './constants.js';
 
 export const DEFAULT_SETTINGS = {
   soundEnabled: true,
@@ -7,7 +7,49 @@ export const DEFAULT_SETTINGS = {
   darkMode: true,
 };
 
+export const DEFAULT_PROFILE = {
+  name: 'Wayfinder',
+  avatarId: PROFILE_AVATARS[0].id,
+};
+
 export const StorageService = {
+  async getProfile() {
+    try {
+      const val = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE);
+      if (!val) return DEFAULT_PROFILE;
+
+      const parsed = JSON.parse(val);
+      return {
+        name: typeof parsed?.name === 'string' && parsed.name.trim()
+          ? parsed.name.trim().slice(0, 20)
+          : DEFAULT_PROFILE.name,
+        avatarId: PROFILE_AVATARS.some((avatar) => avatar.id === parsed?.avatarId)
+          ? parsed.avatarId
+          : DEFAULT_PROFILE.avatarId,
+      };
+    } catch (e) {
+      console.warn('Failed to load player profile from storage:', e);
+      return DEFAULT_PROFILE;
+    }
+  },
+
+  async saveProfile(profile) {
+    const name = typeof profile?.name === 'string' ? profile.name.trim().slice(0, 20) : '';
+    const avatarId = PROFILE_AVATARS.some((avatar) => avatar.id === profile?.avatarId)
+      ? profile.avatarId
+      : DEFAULT_PROFILE.avatarId;
+
+    if (!name) return false;
+
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.PROFILE, JSON.stringify({ name, avatarId }));
+      return true;
+    } catch (e) {
+      console.warn('Failed to save player profile:', e);
+      return false;
+    }
+  },
+
   async getUnlockedLevel() {
     try {
       const val = await AsyncStorage.getItem(STORAGE_KEYS.UNLOCKED_LEVEL);

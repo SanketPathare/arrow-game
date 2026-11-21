@@ -45,10 +45,22 @@ export const DIFFICULTY_TIERS = [
   { id: 'expert', title: 'Expert', range: [41, 50], size: 8, label: '8x8' },
 ];
 
+export const PROFILE_AVATARS = [
+  { id: 'fox', emoji: '🦊', color: '#F97316' },
+  { id: 'wolf', emoji: '🐺', color: '#64748B' },
+  { id: 'owl', emoji: '🦉', color: '#A855F7' },
+  { id: 'cat', emoji: '🐱', color: '#EC4899' },
+  { id: 'frog', emoji: '🐸', color: '#22C55E' },
+  { id: 'panda', emoji: '🐼', color: '#38BDF8' },
+  { id: 'dragon', emoji: '🐲', color: '#EF4444' },
+  { id: 'unicorn', emoji: '🦄', color: '#D946EF' },
+];
+
 export const STORAGE_KEYS = {
   UNLOCKED_LEVEL: '@arrow_escape_unlocked_level',
   LEVEL_STATS: '@arrow_escape_level_stats',
   SETTINGS: '@arrow_escape_settings',
+  PROFILE: '@arrow_escape_profile',
   DAILY_STATS: '@arrow_escape_daily_stats',
   DAILY_GIFT: '@arrow_escape_daily_gift',
   BLITZ_STATS: '@arrow_escape_blitz_stats',

@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
   Text,
+  TextInput,
   ScrollView,
   Pressable,
   useWindowDimensions,
@@ -28,6 +29,7 @@ import {
 } from '../components/SvgIcons.js';
 import { getLevelData } from '../engine/levelData.js';
 import { StorageService } from '../utils/storage.js';
+import { PROFILE_AVATARS } from '../utils/constants.js';
 import { soundManager } from '../utils/sound.js';
 
 const CHAPTERS = [
@@ -134,6 +136,8 @@ export function HomeScreen({
   unlockedLevel = 1,
   levelStats = {},
   dailyStats = {},
+  profile = { name: 'Wayfinder', avatarId: 'fox' },
+  onSaveProfile,
   onPlay,
   onPlayBlitz,
   onOpenLevelSelect,
@@ -144,6 +148,10 @@ export function HomeScreen({
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileDraft, setProfileDraft] = useState(profile);
+  const [profileError, setProfileError] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [giftClaimedDate, setGiftClaimedDate] = useState(null);
   const [blitzStats, setBlitzStats] = useState({ highScore: 0, mostCleared: 0, bestCombo: 0 });
 
@@ -185,6 +193,38 @@ export function HomeScreen({
   const streak = dailyStats?.streak || 0;
 
   const rank = useMemo(() => getPlayerRank(totalStars), [totalStars]);
+  const selectedAvatar = PROFILE_AVATARS.find((avatar) => avatar.id === profile.avatarId)
+    || PROFILE_AVATARS[0];
+
+  const openProfile = () => {
+    setProfileDraft(profile);
+    setProfileError('');
+    setShowProfile(true);
+  };
+
+  const saveProfile = async () => {
+    const name = profileDraft.name.trim();
+    if (!name) {
+      setProfileError('Enter a name before saving your profile.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    setProfileError('');
+    try {
+      const saved = await onSaveProfile({ name, avatarId: profileDraft.avatarId });
+      if (saved) {
+        setShowProfile(false);
+      } else {
+        setProfileError('Your profile could not be saved. Please try again.');
+      }
+    } catch (error) {
+      console.warn('Failed to save player profile:', error);
+      setProfileError('Your profile could not be saved. Please try again.');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const currentChapter = useMemo(() => {
     return (
@@ -251,12 +291,12 @@ export function HomeScreen({
             onPress={() => setShowHowToPlay(true)}
           />
 
-          {/* Player Rank & Star Badge Pill */}
+          {/* Player Profile & Rank Pill */}
           <Pressable
-            onPress={() => setShowAchievements(true)}
+            onPress={openProfile}
             style={[styles.rankPillWrapper, isNarrow && { maxWidth: 140, marginHorizontal: 4 }]}
             accessibilityRole="button"
-            accessibilityLabel={`Player Rank: ${rank.title}, ${totalStars} stars`}
+            accessibilityLabel={`Edit player profile for ${profile.name}. Rank: ${rank.title}, ${totalStars} stars`}
           >
             <View style={styles.rankPillShadow} />
             <LinearGradient
@@ -266,16 +306,18 @@ export function HomeScreen({
               style={styles.rankPillFace}
             >
               <View style={styles.rankSheen} />
-              <View style={styles.rankCrownSlot}>
-                <SvgCrown size={17} color={rank.color} />
+              <View style={[styles.profileAvatarBadge, { backgroundColor: selectedAvatar.color }]}>
+                <Text style={styles.profileAvatarEmoji}>{selectedAvatar.emoji}</Text>
               </View>
               <View style={styles.rankTextCol}>
-                <Text numberOfLines={1} style={styles.rankTitle}>
-                  {rank.title.toUpperCase()}
+                <Text numberOfLines={1} style={styles.profileName}>
+                  {profile.name}
                 </Text>
                 <View style={styles.starRow}>
-                  <SvgStar size={11} color="#FFD13B" />
-                  <Text style={styles.rankStarsText}>{totalStars} ★</Text>
+                  <SvgCrown size={11} color={rank.color} />
+                  <Text numberOfLines={1} style={styles.rankStarsText}>
+                    {rank.title} · {totalStars} ★
+                  </Text>
                 </View>
               </View>
             </LinearGradient>
@@ -558,6 +600,79 @@ export function HomeScreen({
       </ScrollView>
 
       {/* ---------------------------------------------------- */}
+      {/* Player Profile Plaque                                 */}
+      {/* ---------------------------------------------------- */}
+      <ThreeDModalPlaque
+        visible={showProfile}
+        onClose={() => setShowProfile(false)}
+        crestType="rules"
+        title="PLAYER PROFILE"
+        subtitle="Choose your name and avatar"
+        maxWidth={360}
+        showClose={true}
+      >
+        <View style={styles.profileForm}>
+          <Text style={styles.profileFieldLabel}>PLAYER NAME</Text>
+          <TextInput
+            value={profileDraft.name}
+            onChangeText={(name) => {
+              setProfileDraft((current) => ({ ...current, name }));
+              if (profileError) setProfileError('');
+            }}
+            placeholder="Enter your name"
+            placeholderTextColor="#64748B"
+            maxLength={20}
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            selectionColor="#38D9F8"
+            underlineColorAndroid="transparent"
+            style={styles.profileNameInput}
+            accessibilityLabel="Player name"
+          />
+
+          <Text style={[styles.profileFieldLabel, styles.avatarFieldLabel]}>CHOOSE AN AVATAR</Text>
+          <View style={styles.avatarGallery}>
+            {PROFILE_AVATARS.map((avatar) => {
+              const isSelected = profileDraft.avatarId === avatar.id;
+              return (
+                <Pressable
+                  key={avatar.id}
+                  onPress={() => {
+                    soundManager.playClickSound();
+                    setProfileDraft((current) => ({ ...current, avatarId: avatar.id }));
+                  }}
+                  style={[
+                    styles.avatarOption,
+                    { backgroundColor: `${avatar.color}24` },
+                    isSelected && { borderColor: avatar.color, backgroundColor: `${avatar.color}42` },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${avatar.id} avatar`}
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <Text style={styles.avatarOptionEmoji}>{avatar.emoji}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {profileError ? (
+            <Text style={styles.profileError} accessibilityRole="alert">{profileError}</Text>
+          ) : null}
+          <ThreeDButton
+            title={isSavingProfile ? 'Saving...' : 'Save Profile'}
+            icon="checkmark"
+            colorScheme="cyan"
+            size="md"
+            disabled={isSavingProfile}
+            onPress={saveProfile}
+            style={styles.profileSaveButton}
+          />
+        </View>
+      </ThreeDModalPlaque>
+
+      {/* ---------------------------------------------------- */}
       {/* Modal 1: How to Play Plaque                           */}
       {/* ---------------------------------------------------- */}
       <ThreeDModalPlaque
@@ -630,7 +745,7 @@ export function HomeScreen({
       </ThreeDModalPlaque>
 
       {/* ---------------------------------------------------- */}
-      {/* Modal 2: Hall of Mastery / Achievements Plaque       */}
+      {/* Modal 3: Hall of Mastery / Achievements Plaque       */}
       {/* ---------------------------------------------------- */}
       <ThreeDModalPlaque
         visible={showAchievements}
@@ -712,7 +827,7 @@ export function HomeScreen({
       </ThreeDModalPlaque>
 
       {/* ---------------------------------------------------- */}
-      {/* Modal 3: Daily Tactical Supply Claim Celebration      */}
+      {/* Modal 4: Daily Tactical Supply Claim Celebration      */}
       {/* ---------------------------------------------------- */}
       {showGiftModal && <Confetti count={40} />}
       <ThreeDModalPlaque
@@ -810,8 +925,24 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.18)',
     borderRadius: 8,
   },
-  rankCrownSlot: {
-    marginRight: 6,
+  profileAvatarBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  profileAvatarEmoji: {
+    fontSize: 19,
+  },
+  profileName: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: '#F8FAFC',
+    letterSpacing: 0.3,
   },
   rankTextCol: {
     flex: 1,
@@ -832,6 +963,63 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#F8FAFC',
     marginLeft: 3,
+  },
+  profileForm: {
+    width: '100%',
+    paddingTop: 2,
+  },
+  profileFieldLabel: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 7,
+  },
+  profileNameInput: {
+    width: '100%',
+    minHeight: 46,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.32)',
+    backgroundColor: 'rgba(2, 6, 23, 0.68)',
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '700',
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+  },
+  avatarFieldLabel: {
+    marginTop: 18,
+  },
+  avatarGallery: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 4,
+  },
+  avatarOption: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  avatarOptionEmoji: {
+    fontSize: 30,
+  },
+  profileError: {
+    color: '#FDA4AF',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  profileSaveButton: {
+    marginTop: 16,
+    marginBottom: 6,
   },
   emblemSection: {
     alignItems: 'center',
